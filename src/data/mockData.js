@@ -31,6 +31,7 @@ export const users = [
 ];
 
 export const classes = [
+  { id: "class-6", name: "6. Sınıf" },
   { id: "class-9", name: "9. Sınıf" },
   { id: "class-10", name: "10. Sınıf" },
   { id: "class-11", name: "11. Sınıf" },
@@ -38,6 +39,9 @@ export const classes = [
 ];
 
 export const units = [
+  { id: "unit-6-1", classId: "class-6", name: "Doğal Sayılarla İşlemler ve Çarpanlar" },
+  { id: "unit-6-2", classId: "class-6", name: "Kesirler ve Ondalık Gösterim" },
+  { id: "unit-6-3", classId: "class-6", name: "Açılar ve Alan Ölçme" },
   { id: "unit-12-1", classId: "class-12", name: "Limit ve Süreklilik" },
   { id: "unit-12-2", classId: "class-12", name: "Türev" },
   { id: "unit-12-3", classId: "class-12", name: "İntegral" }

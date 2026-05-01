@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Menu, X, User } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  const getDashboardPath = (role) => {
+    switch(role) {
+      case 'student': return '/student/dashboard';
+      case 'teacher': return '/teacher/dashboard';
+      case 'admin': return '/admin/dashboard';
+      default: return '/';
+    }
+  };
 
   const getRoleName = (role) => {
     switch(role) {
@@ -84,18 +95,31 @@ const Layout = ({ children }) => {
           <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', marginBottom: '1rem', fontWeight: 500 }}>MENÜ</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <li>
-              <a href="#" style={{ 
+              <Link to={getDashboardPath(user?.role)} style={{ 
                 display: 'block', 
                 padding: '0.75rem 1rem', 
                 borderRadius: 'var(--radius-sm)', 
-                backgroundColor: 'var(--color-purple)', 
-                color: 'var(--color-white)',
-                fontWeight: 500
+                backgroundColor: location.pathname.includes('/dashboard') ? 'var(--color-purple)' : 'transparent', 
+                color: location.pathname.includes('/dashboard') ? 'var(--color-white)' : 'var(--color-black)',
+                fontWeight: 500,
+                textDecoration: 'none'
               }}>
                 Pano (Dashboard)
-              </a>
+              </Link>
             </li>
-            {/* More links would go here based on role */}
+            <li>
+              <Link to="/profile" style={{ 
+                display: 'block', 
+                padding: '0.75rem 1rem', 
+                borderRadius: 'var(--radius-sm)', 
+                backgroundColor: location.pathname === '/profile' ? 'var(--color-purple)' : 'transparent', 
+                color: location.pathname === '/profile' ? 'var(--color-white)' : 'var(--color-black)',
+                fontWeight: 500,
+                textDecoration: 'none'
+              }}>
+                Profilim
+              </Link>
+            </li>
           </ul>
         </nav>
 

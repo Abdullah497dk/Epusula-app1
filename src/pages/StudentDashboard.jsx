@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dailyQuestions, units } from '../data/mockData';
+import { allQuestions } from '../data/questionsData';
 import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronRight, X, Send } from 'lucide-react';
 
 const StudentDashboard = () => {
@@ -15,7 +16,7 @@ const StudentDashboard = () => {
   useEffect(() => {
     // A real app would fetch from API mapping user.classId -> today's questions
     // Here we're mocking fetching latest 3 questions for their class
-    const todaysQs = dailyQuestions.filter(q => q.classId === user.classId).slice(0, 3);
+    const todaysQs = [...dailyQuestions, ...allQuestions].filter(q => q.classId === user.classId).slice(0, 3);
     setQuestions(todaysQs);
   }, [user]);
 

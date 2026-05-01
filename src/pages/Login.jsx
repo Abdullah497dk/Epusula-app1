@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 
 const Login = () => {
@@ -132,6 +132,13 @@ const Login = () => {
             Giriş Yap
           </button>
         </form>
+
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem' }}>
+          <span style={{ color: 'var(--color-black-light)' }}>Hesabınız yok mu? </span>
+          <Link to="/signup" style={{ color: 'var(--color-purple)', fontWeight: 600, textDecoration: 'none' }}>
+            Kayıt Ol
+          </Link>
+        </div>
 
         <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-black-light)' }}>
           <p>Test Hesapları:</p>

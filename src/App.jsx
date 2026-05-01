@@ -6,6 +6,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
+import Signup from './pages/Signup';
+import Profile from './pages/Profile';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -32,6 +34,17 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          
+          {/* Profile Route for all authenticated users */}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* Student Routes */}
           <Route 
