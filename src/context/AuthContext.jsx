@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
     const newUser = {
       id: Date.now().toString(),
-      stats: { streak: 0, totalAnswered: 0, correctAnswers: 0, rank: 0 },
+      stats: { streak: 0, totalAnswered: 0, correctAnswers: 0, rank: 0, score: 0 },
       ...userData
     };
 
@@ -98,7 +98,8 @@ export const AuthProvider = ({ children }) => {
     register,
     updateProfile,
     logout,
-    loading
+    loading,
+    allUsers
   };
 
   return (

@@ -108,6 +108,19 @@ const Layout = ({ children }) => {
               </Link>
             </li>
             <li>
+              <Link to="/leaderboard" style={{ 
+                display: 'block', 
+                padding: '0.75rem 1rem', 
+                borderRadius: 'var(--radius-sm)', 
+                backgroundColor: location.pathname === '/leaderboard' ? 'var(--color-purple)' : 'transparent', 
+                color: location.pathname === '/leaderboard' ? 'var(--color-white)' : 'var(--color-black)',
+                fontWeight: 500,
+                textDecoration: 'none'
+              }}>
+                Sıralama (Leaderboard)
+              </Link>
+            </li>
+            <li>
               <Link to="/profile" style={{ 
                 display: 'block', 
                 padding: '0.75rem 1rem', 

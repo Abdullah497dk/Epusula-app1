@@ -5,15 +5,26 @@ import { allQuestions } from '../data/questionsData';
 import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronRight, X, Send } from 'lucide-react';
 
 const StudentDashboard = () => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [alreadyCompletedToday, setAlreadyCompletedToday] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
 
   useEffect(() => {
+    const todayDate = new Date().toISOString().split('T')[0];
+    if (user?.stats?.lastTestDate === todayDate) {
+      setAlreadyCompletedToday(true);
+      if (user.stats.todaysAnswers) {
+        setAnswers(user.stats.todaysAnswers);
+        setScore(user.stats.todaysCorrectCount || 0);
+        setSubmitted(true);
+      }
+    }
     // A real app would fetch from API mapping user.classId -> today's questions
     // Here we're mocking fetching latest 3 questions for their class
     const todaysQs = [...dailyQuestions, ...allQuestions].filter(q => q.classId === user.classId).slice(0, 3);
@@ -35,6 +46,38 @@ const StudentDashboard = () => {
     });
     setScore(currentScore);
     setSubmitted(true);
+
+    if (!alreadyCompletedToday) {
+      const todayDate = new Date().toISOString().split('T')[0];
+      let points = 10; // Tamamlama puanı
+      points += currentScore * 5; // Doğru cevap başı 5 puan
+
+      let newStreak = (user.stats?.streak || 0) + 1; // Basit seri mantığı
+
+      if (newStreak > 0 && newStreak % 10 === 0) {
+        points += 100; // 10 günlük seride 100 bonus puan
+      }
+
+      setEarnedPoints(points);
+      setAlreadyCompletedToday(true);
+
+      const newTotalScore = (user.stats?.score || 0) + points;
+      const newTotalAnswered = (user.stats?.totalAnswered || 0) + questions.length;
+      const newCorrectAnswers = (user.stats?.correctAnswers || 0) + currentScore;
+
+      updateProfile({
+        stats: {
+          ...user.stats,
+          score: newTotalScore,
+          streak: newStreak,
+          totalAnswered: newTotalAnswered,
+          correctAnswers: newCorrectAnswers,
+          lastTestDate: todayDate,
+          todaysAnswers: answers,
+          todaysCorrectCount: currentScore
+        }
+      });
+    }
   };
 
   const getUnitName = (unitId) => {
@@ -60,8 +103,8 @@ const StudentDashboard = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)' }}>
           <Award size={24} color="#fcd34d" />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>Sıralama</span>
-            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>#{user?.stats?.rank}</span>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>Puan</span>
+            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{user?.stats?.score || 0}</span>
           </div>
         </div>
       </div>
@@ -93,9 +136,11 @@ const StudentDashboard = () => {
               <PlayCircle size={40} color="var(--color-blue)" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--color-black)' }}>Günün Soruları Hazır!</h3>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--color-black)' }}>
+                {alreadyCompletedToday ? "Bugünkü Görevini Tamamladın!" : "Günün Soruları Hazır!"}
+              </h3>
               <p style={{ color: 'var(--color-black-light)', maxWidth: '400px', margin: '0 auto', fontSize: '1rem' }}>
-                Bugün senin için hazırlanan 3 soruyu çözmeye hazır mısın? Başarılar dileriz!
+                {alreadyCompletedToday ? "Cevaplarını ve doğru çözümleri inceleyebilirsin." : "Bugün senin için hazırlanan 3 soruyu çözmeye hazır mısın? Başarılar dileriz!"}
               </p>
             </div>
             <button 
@@ -103,8 +148,10 @@ const StudentDashboard = () => {
               onClick={() => {
                 setIsStarted(true);
                 setCurrentQuestionIndex(0);
-                setAnswers({});
-                setSubmitted(false);
+                if (!alreadyCompletedToday) {
+                  setAnswers({});
+                  setSubmitted(false);
+                }
               }} 
               style={{ 
                 padding: '1rem 2.5rem', 
@@ -113,7 +160,7 @@ const StudentDashboard = () => {
                 boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.39)'
               }}
             >
-              Günün Görevine Başla
+              {alreadyCompletedToday ? "Çözümleri İncele" : "Günün Görevine Başla"}
             </button>
           </div>
         ) : (
@@ -256,7 +303,9 @@ const StudentDashboard = () => {
                     {submitted && (
                       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                          <p style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-purple)' }}>
-                            Bu soruyu tamamladın! Toplam Skorun: {score} / {questions.length}
+                            {alreadyCompletedToday && earnedPoints === 0 ? "Bugün görevini zaten tamamladın! " : "Tebrikler! "}
+                            Doğru Sayın: {score} / {questions.length}
+                            {earnedPoints > 0 && <span style={{display: 'block', color: 'var(--color-blue)', marginTop: '0.5rem'}}>+ {earnedPoints} Puan Kazandın!</span>}
                          </p>
                       </div>
                     )}
