@@ -1,20 +1,36 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Trophy, Search, User, X } from 'lucide-react';
 import { classes } from '../data/mockData';
+import { useLocation } from 'react-router-dom';
 
 const Leaderboard = () => {
   const { user, allUsers, customClasses } = useAuth();
-  const [viewMode, setViewMode] = useState('global'); // 'global', 'main_class', or customClass.id
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialClassId = queryParams.get('classId');
+  
+  const [viewMode, setViewMode] = useState(initialClassId || 'global'); // 'global', 'main_class', or customClass.id
   const [selectedProfile, setSelectedProfile] = useState(null);
+
+  // If query params change (e.g., user navigated to a different class leaderboard)
+  useEffect(() => {
+    if (initialClassId) {
+      setViewMode(initialClassId);
+    }
+  }, [initialClassId]);
 
   const getClassName = (classId) => {
     return classes.find(c => c.id === classId)?.name || 'Bilinmiyor';
   };
 
   const myJoinedClasses = useMemo(() => {
-    if (user?.role !== 'student') return [];
-    return customClasses?.filter(c => c.studentIds.includes(user.id)) || [];
+    if (user?.role === 'student') {
+      return customClasses?.filter(c => c.studentIds.includes(user.id)) || [];
+    } else if (user?.role === 'teacher') {
+      return customClasses?.filter(c => c.teacherId === user.id) || [];
+    }
+    return [];
   }, [customClasses, user]);
 
   const rankedUsers = useMemo(() => {

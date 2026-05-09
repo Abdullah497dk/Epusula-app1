@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Users, Plus, Search, Check, X, Clock, Shield } from 'lucide-react';
 
+import { Link } from 'react-router-dom';
+
 const MyClasses = () => {
   const { user, customClasses, joinRequests, createCustomClass, requestJoinClass, handleJoinRequest, allUsers } = useAuth();
   
@@ -159,12 +161,44 @@ const MyClasses = () => {
             {myCreatedClasses.length === 0 ? (
               <p style={{ color: 'var(--color-black-light)' }}>Henüz hiç sınıf oluşturmadınız.</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {myCreatedClasses.map(c => (
-                  <div key={c.id} style={{ padding: '1.25rem', border: '1px solid var(--color-gray)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white-off)' }}>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-purple)' }}>{c.name}</h4>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)', marginTop: '0.5rem' }}>Sınıf Kodu: <strong style={{ color: 'var(--color-black)' }}>{c.id}</strong></p>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)', marginTop: '0.25rem' }}>Öğrenci Sayısı: <strong>{c.studentIds.length}</strong></p>
+                  <div key={c.id} style={{ padding: '1.25rem', border: '1px solid var(--color-gray)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-purple)' }}>{c.name}</h4>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)', marginTop: '0.25rem' }}>Sınıf Kodu: <strong style={{ color: 'var(--color-black)' }}>{c.id}</strong></p>
+                      </div>
+                      <Link 
+                        to={`/leaderboard?classId=${c.id}`} 
+                        className="btn btn-outline"
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                      >
+                        Sınıf Sıralaması
+                      </Link>
+                    </div>
+                    
+                    <div style={{ borderTop: '1px solid var(--color-gray)', paddingTop: '1rem' }}>
+                      <p style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Öğrenciler ({c.studentIds.length})</p>
+                      {c.studentIds.length === 0 ? (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)' }}>Henüz kayıtlı öğrenci yok.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {c.studentIds.map(studentId => (
+                            <div key={studentId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
+                              <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{getStudentName(studentId)}</span>
+                              <Link 
+                                to={`/student-stats/${studentId}`} 
+                                className="btn btn-primary"
+                                style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+                              >
+                                İstatistikler
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
