@@ -37,7 +37,9 @@ const Layout = ({ children }) => {
       )}
 
       {/* Sidebar */}
-      <aside style={{
+      <aside 
+        className={sidebarOpen ? 'sidebar-open' : ''}
+        style={{
         position: 'fixed',
         top: 0,
         left: 0,
@@ -94,42 +96,57 @@ const Layout = ({ children }) => {
         <nav style={{ flex: 1, padding: '1.5rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', marginBottom: '1rem', fontWeight: 500 }}>MENÜ</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <li>
-              <Link to={getDashboardPath(user?.role)} style={{ 
-                display: 'block', 
-                padding: '0.75rem 1rem', 
-                borderRadius: 'var(--radius-sm)', 
-                backgroundColor: location.pathname.includes('/dashboard') ? 'var(--color-purple)' : 'transparent', 
-                color: location.pathname.includes('/dashboard') ? 'var(--color-white)' : 'var(--color-black)',
-                fontWeight: 500,
-                textDecoration: 'none'
-              }}>
+            <li className="nav-item">
+              <Link 
+                to={getDashboardPath(user?.role)} 
+                onClick={() => setSidebarOpen(false)}
+                style={{ 
+                  display: 'block', 
+                  padding: '0.75rem 1rem', 
+                  borderRadius: 'var(--radius-sm)', 
+                  backgroundColor: location.pathname.includes('/dashboard') ? 'var(--color-purple)' : 'transparent', 
+                  color: location.pathname.includes('/dashboard') ? 'var(--color-white)' : 'var(--color-black)',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 Pano (Dashboard)
               </Link>
             </li>
-            <li>
-              <Link to="/leaderboard" style={{ 
-                display: 'block', 
-                padding: '0.75rem 1rem', 
-                borderRadius: 'var(--radius-sm)', 
-                backgroundColor: location.pathname === '/leaderboard' ? 'var(--color-purple)' : 'transparent', 
-                color: location.pathname === '/leaderboard' ? 'var(--color-white)' : 'var(--color-black)',
-                fontWeight: 500,
-                textDecoration: 'none'
-              }}>
+            <li className="nav-item">
+              <Link 
+                to="/leaderboard" 
+                onClick={() => setSidebarOpen(false)}
+                style={{ 
+                  display: 'block', 
+                  padding: '0.75rem 1rem', 
+                  borderRadius: 'var(--radius-sm)', 
+                  backgroundColor: location.pathname === '/leaderboard' ? 'var(--color-purple)' : 'transparent', 
+                  color: location.pathname === '/leaderboard' ? 'var(--color-white)' : 'var(--color-black)',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 Sıralama (Leaderboard)
               </Link>
             </li>
-            <li>
-              <Link to="/profile" style={{ 
-                display: 'block', 
-                padding: '0.75rem 1rem', 
-                borderRadius: 'var(--radius-sm)', 
-                backgroundColor: location.pathname === '/profile' ? 'var(--color-purple)' : 'transparent', 
-                color: location.pathname === '/profile' ? 'var(--color-white)' : 'var(--color-black)',
-                fontWeight: 500,
-                textDecoration: 'none'
-              }}>
+            <li className="nav-item">
+              <Link 
+                to="/profile" 
+                onClick={() => setSidebarOpen(false)}
+                style={{ 
+                  display: 'block', 
+                  padding: '0.75rem 1rem', 
+                  borderRadius: 'var(--radius-sm)', 
+                  backgroundColor: location.pathname === '/profile' ? 'var(--color-purple)' : 'transparent', 
+                  color: location.pathname === '/profile' ? 'var(--color-white)' : 'var(--color-black)',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 Profilim
               </Link>
             </li>
@@ -140,14 +157,17 @@ const Layout = ({ children }) => {
         <div style={{ padding: '1.5rem', borderTop: '1px solid var(--color-gray)' }}>
           <button 
             onClick={logout}
+            className="logout-btn"
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.5rem', 
-              color: 'var(--color-black-light)',
-              fontWeight: 500,
+              gap: '0.75rem', 
+              color: '#ef4444',
+              fontWeight: 600,
               width: '100%',
-              padding: '0.5rem 0'
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'all 0.2s ease'
             }}
           >
             <LogOut size={18} />
@@ -157,12 +177,13 @@ const Layout = ({ children }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div style={{ 
+      <div className="main-wrapper" style={{ 
         flex: 1, 
-        marginLeft: window.innerWidth > 768 ? (sidebarOpen ? '260px' : '0') : '0', // Basic responsiveness handle, ideally handled via CSS media queries
-        transition: 'margin-left 0.3s ease-in-out',
+        marginLeft: '0', 
+        transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        minWidth: 0
       }}>
         {/* Header */}
         <header style={{ 
@@ -178,6 +199,7 @@ const Layout = ({ children }) => {
         }}>
           {!sidebarOpen && (
             <button 
+              className="menu-btn"
               onClick={() => setSidebarOpen(true)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem' }}
             >
@@ -198,11 +220,43 @@ const Layout = ({ children }) => {
         </main>
       </div>
       
-      {/* Dynamic styles override for desktop sidebar to be always visible */}
+      {/* Dynamic styles for animations */}
       <style>{`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+
+        .nav-item {
+          opacity: 0;
+        }
+
+        .sidebar-open .nav-item {
+          animation: slideIn 0.4s ease forwards;
+        }
+
+        .sidebar-open .nav-item:nth-child(1) { animation-delay: 0.1s; }
+        .sidebar-open .nav-item:nth-child(2) { animation-delay: 0.2s; }
+        .sidebar-open .nav-item:nth-child(3) { animation-delay: 0.3s; }
+
+        .nav-item a:hover {
+          transform: translateX(5px);
+          background-color: rgba(112, 38, 185, 0.05) !important;
+          color: var(--color-purple) !important;
+        }
+
+        .logout-btn:hover {
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+
         @media (min-width: 768px) {
-          aside { transform: translateX(0) !important; }
+          aside { 
+            transform: translateX(0) !important; 
+            box-shadow: none !important;
+          }
           .main-wrapper { margin-left: 260px !important; }
+          .menu-btn { display: none !important; }
+          .nav-item { opacity: 1 !important; animation: none !important; }
         }
       `}</style>
     </div>
