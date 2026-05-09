@@ -23,7 +23,36 @@ export const AuthProvider = ({ children }) => {
     // Check localStorage for saved session
     const storedUser = localStorage.getItem('epusula_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      let parsedUser = JSON.parse(storedUser);
+      
+      // Streak Reset Logic: Eğer son test tarihinden itibaren 1 günden fazla geçmişse seriyi sıfırla
+      if (parsedUser.stats?.lastTestDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const lastDate = new Date(parsedUser.stats.lastTestDate);
+        lastDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = today - lastDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 1 && parsedUser.stats.streak > 0) {
+          parsedUser.stats.streak = 0;
+          localStorage.setItem('epusula_user', JSON.stringify(parsedUser));
+          
+          // allUsers listesini de güncelle
+          const storedAll = localStorage.getItem('epusula_all_users');
+          if (storedAll) {
+            const allParsed = JSON.parse(storedAll);
+            const updatedAll = allParsed.map(u => 
+              u.id === parsedUser.id ? { ...u, stats: { ...u.stats, streak: 0 } } : u
+            );
+            localStorage.setItem('epusula_all_users', JSON.stringify(updatedAll));
+            setAllUsers(updatedAll);
+          }
+        }
+      }
+      setUser(parsedUser);
     }
     setLoading(false);
   }, []);
@@ -32,6 +61,26 @@ export const AuthProvider = ({ children }) => {
     const foundUser = allUsers.find(u => u.email === email && u.password === password);
     if (foundUser) {
       const { password: _, ...userWithoutPass } = foundUser;
+      
+      // Streak Check on Login
+      if (userWithoutPass.stats?.lastTestDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastDate = new Date(userWithoutPass.stats.lastTestDate);
+        lastDate.setHours(0, 0, 0, 0);
+        
+        const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+        if (diffDays > 1) {
+          userWithoutPass.stats.streak = 0;
+          // allUsers listesini de güncel tutalım
+          const updatedUsers = allUsers.map(u => 
+            u.id === userWithoutPass.id ? { ...u, stats: { ...u.stats, streak: 0 } } : u
+          );
+          setAllUsers(updatedUsers);
+          localStorage.setItem('epusula_all_users', JSON.stringify(updatedUsers));
+        }
+      }
+
       setUser(userWithoutPass);
       localStorage.setItem('epusula_user', JSON.stringify(userWithoutPass));
       return { success: true, role: userWithoutPass.role };

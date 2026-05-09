@@ -52,7 +52,25 @@ const StudentDashboard = () => {
       let points = 10; // Tamamlama puanı
       points += currentScore * 5; // Doğru cevap başı 5 puan
 
-      let newStreak = (user.stats?.streak || 0) + 1; // Basit seri mantığı
+      const lastDateStr = user.stats?.lastTestDate;
+      let currentStreak = user.stats?.streak || 0;
+      
+      if (lastDateStr) {
+        const lastDate = new Date(lastDateStr);
+        lastDate.setHours(0, 0, 0, 0);
+        const today = new Date(todayDate);
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = today - lastDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Eğer 1 günden fazla ara verilmişse seriyi sıfırla
+        if (diffDays > 1) {
+          currentStreak = 0;
+        }
+      }
+
+      let newStreak = currentStreak + 1;
 
       if (newStreak > 0 && newStreak % 10 === 0) {
         points += 100; // 10 günlük seride 100 bonus puan
