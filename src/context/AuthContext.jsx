@@ -27,6 +27,14 @@ export const AuthProvider = ({ children }) => {
     let currentAllUsers = [];
     if (storedUsers) {
       currentAllUsers = JSON.parse(storedUsers);
+      // Ensure Ahmet Adil exists for the example
+      if (!currentAllUsers.find(u => u.email === 'ahmetadil@epusula.net')) {
+        const ahmetAdil = initialUsers.find(u => u.email === 'ahmetadil@epusula.net');
+        if (ahmetAdil) {
+          currentAllUsers.push(ahmetAdil);
+          localStorage.setItem('epusula_all_users', JSON.stringify(currentAllUsers));
+        }
+      }
     } else {
       currentAllUsers = initialUsers;
       localStorage.setItem('epusula_all_users', JSON.stringify(initialUsers));

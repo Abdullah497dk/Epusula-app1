@@ -1,11 +1,35 @@
 export const users = [
   {
     id: "1",
+    name: "Ahmet Adil",
+    role: "student",
+    classId: "class-12",
+    email: "ahmetadil@epusula.net",
+    password: "123",
+    stats: {
+      streak: 5,
+      totalAnswered: 120,
+      correctAnswers: 98,
+      rank: 2,
+      score: 450,
+      lastTestDate: new Date().toISOString()
+    },
+    activityLog: [
+      { type: 'test_completed', count: 3, total: 3, date: new Date(Date.now() - 0 * 86400000).toISOString() }, // Bugün (Peak)
+      { type: 'test_completed', count: 2, total: 3, date: new Date(Date.now() - 1 * 86400000).toISOString() }, // Dün (Peak)
+      // 2 gün önce boş (Valley)
+      { type: 'test_completed', count: 3, total: 3, date: new Date(Date.now() - 4 * 86400000).toISOString() }, // 4 gün önce (Peak)
+      { type: 'test_completed', count: 1, total: 3, date: new Date(Date.now() - 6 * 86400000).toISOString() }, // 6 gün önce (Start)
+      { type: 'login', date: new Date().toISOString() }
+    ]
+  },
+  {
+    id: "ahmet_yilmaz",
     name: "Ahmet Yılmaz",
     role: "student",
     classId: "class-12",
     email: "ahmet@epusula.net",
-    password: "123", // In a real app never store passwords in plaintext
+    password: "123",
     stats: {
       streak: 15,
       totalAnswered: 45,

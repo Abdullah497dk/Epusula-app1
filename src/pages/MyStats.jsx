@@ -1,6 +1,153 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Award, Target, Activity, Flame, Calendar as CalendarIcon } from 'lucide-react';
+import { Award, Target, Activity, Flame, Calendar as CalendarIcon, TrendingUp } from 'lucide-react';
+
+// Weekly Trends Component (Line Chart)
+const WeeklyTrends = ({ activityLog }) => {
+  const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+  
+  // Calculate current week data
+  const weeklyData = useMemo(() => {
+    const data = new Array(7).fill(0);
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 is Sunday
+    
+    // Get the date of the Sunday of the current week
+    const firstDayOfWeek = new Date(today);
+    firstDayOfWeek.setDate(today.getDate() - currentDay);
+    firstDayOfWeek.setHours(0, 0, 0, 0);
+
+    if (activityLog) {
+      activityLog.forEach(log => {
+        if (log.type === 'test_completed') {
+          const logDate = new Date(log.date);
+          logDate.setHours(0, 0, 0, 0);
+          
+          const diffTime = logDate - firstDayOfWeek;
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays >= 0 && diffDays < 7) {
+            data[diffDays] += log.count || 0;
+          }
+        }
+      });
+    }
+    return data;
+  }, [activityLog]);
+
+  const maxVal = Math.max(...weeklyData, 5); // Minimum scale of 5
+  const dailyAverage = (weeklyData.reduce((a, b) => a + b, 0) / 7).toFixed(1);
+
+  // SVG Chart Dimensions
+  const width = 500;
+  const height = 200;
+  const padding = 30;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  // Generate points for the SVG path
+  const points = weeklyData.map((val, i) => {
+    const x = padding + (i * (chartWidth / 6));
+    const y = height - padding - (val / maxVal) * chartHeight;
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Area path points (close the path to the bottom)
+  const areaPoints = `
+    ${padding},${height - padding} 
+    ${points} 
+    ${width - padding},${height - padding}
+  `;
+
+  return (
+    <div className="card" style={{ backgroundColor: '#1a1a1a', color: '#fff', border: 'none' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <TrendingUp size={20} color="#3b82f6" />
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600 }}>Haftalık Değerlendirme</h3>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.6 }}>Günlük Ortalama Doğru</p>
+        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#3b82f6' }}>{dailyAverage}</p>
+      </div>
+
+      <div style={{ position: 'relative', width: '100%', height: `${height}px` }}>
+        <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          {/* Grid lines */}
+          {[0, 1, 2, 3, 4].map(i => {
+            const y = padding + i * (chartHeight / 4);
+            return (
+              <line 
+                key={i} 
+                x1={padding} 
+                y1={y} 
+                x2={width - padding} 
+                y2={y} 
+                stroke="#ffffff10" 
+                strokeDasharray="4"
+              />
+            );
+          })}
+
+          {/* Area Fill */}
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <polygon points={areaPoints} fill="url(#gradient)" />
+
+          {/* Line */}
+          <polyline
+            points={points}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Data points */}
+          {weeklyData.map((val, i) => {
+            const x = padding + (i * (chartWidth / 6));
+            const y = height - padding - (val / maxVal) * chartHeight;
+            return (
+              <circle 
+                key={i} 
+                cx={x} 
+                cy={y} 
+                r="4" 
+                fill="#fff" 
+                stroke="#3b82f6" 
+                strokeWidth="2" 
+              />
+            );
+          })}
+
+          {/* X-axis labels */}
+          {days.map((day, i) => {
+            const x = padding + (i * (chartWidth / 6));
+            return (
+              <text 
+                key={i} 
+                x={x} 
+                y={height - 5} 
+                textAnchor="middle" 
+                fill="#ffffff60" 
+                fontSize="12"
+              >
+                {day}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
+};
 
 // Contribution Graph Component
 const ContributionGraph = ({ activityLog }) => {
@@ -242,6 +389,9 @@ const MyStats = () => {
           </div>
         </div>
       </div>
+
+      {/* Weekly Trends Line Chart */}
+      <WeeklyTrends activityLog={activityLog} />
 
       {/* Github-style Contribution Graph */}
       <div className="card">
