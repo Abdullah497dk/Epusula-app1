@@ -132,6 +132,26 @@ const Layout = ({ children }) => {
                 Sıralama (Leaderboard)
               </Link>
             </li>
+            {(user?.role === 'student' || user?.role === 'teacher') && (
+              <li className="nav-item">
+                <Link 
+                  to="/my-classes" 
+                  onClick={() => setSidebarOpen(false)}
+                  style={{ 
+                    display: 'block', 
+                    padding: '0.75rem 1rem', 
+                    borderRadius: 'var(--radius-sm)', 
+                    backgroundColor: location.pathname === '/my-classes' ? 'var(--color-purple)' : 'transparent', 
+                    color: location.pathname === '/my-classes' ? 'var(--color-white)' : 'var(--color-black)',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Sınıflarım
+                </Link>
+              </li>
+            )}
             <li className="nav-item">
               <Link 
                 to="/profile" 

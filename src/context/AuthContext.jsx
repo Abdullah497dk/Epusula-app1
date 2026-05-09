@@ -9,6 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState([]);
+  const [customClasses, setCustomClasses] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
 
   useEffect(() => {
     // Load users from local storage or initialize with mockData
@@ -18,6 +20,16 @@ export const AuthProvider = ({ children }) => {
     } else {
       setAllUsers(initialUsers);
       localStorage.setItem('epusula_all_users', JSON.stringify(initialUsers));
+    }
+
+    const storedClasses = localStorage.getItem('epusula_custom_classes');
+    if (storedClasses) {
+      setCustomClasses(JSON.parse(storedClasses));
+    }
+
+    const storedRequests = localStorage.getItem('epusula_join_requests');
+    if (storedRequests) {
+      setJoinRequests(JSON.parse(storedRequests));
     }
 
     // Check localStorage for saved session
@@ -141,6 +153,79 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('epusula_user');
   };
 
+  // Custom Class Functions
+  const createCustomClass = (name) => {
+    if (user?.role !== 'teacher') return { success: false, error: 'Sadece öğretmenler sınıf oluşturabilir.' };
+    
+    // Generate a unique 6-character alphanumeric ID
+    const classId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    const newClass = {
+      id: classId,
+      name,
+      teacherId: user.id,
+      studentIds: [],
+      createdAt: new Date().toISOString()
+    };
+    
+    const newClasses = [...customClasses, newClass];
+    setCustomClasses(newClasses);
+    localStorage.setItem('epusula_custom_classes', JSON.stringify(newClasses));
+    return { success: true, class: newClass };
+  };
+
+  const requestJoinClass = (classId) => {
+    if (user?.role !== 'student') return { success: false, error: 'Sadece öğrenciler sınıfa katılabilir.' };
+    
+    const targetClass = customClasses.find(c => c.id === classId);
+    if (!targetClass) return { success: false, error: 'Sınıf bulunamadı.' };
+    
+    if (targetClass.studentIds.includes(user.id)) return { success: false, error: 'Zaten bu sınıfa kayıtlısınız.' };
+    
+    if (joinRequests.some(r => r.classId === classId && r.studentId === user.id && r.status === 'pending')) {
+      return { success: false, error: 'Bu sınıfa zaten beklemede olan bir isteğiniz var.' };
+    }
+
+    const newRequest = {
+      id: 'req_' + Date.now(),
+      classId,
+      studentId: user.id,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    const newRequests = [...joinRequests, newRequest];
+    setJoinRequests(newRequests);
+    localStorage.setItem('epusula_join_requests', JSON.stringify(newRequests));
+    return { success: true, request: newRequest };
+  };
+
+  const handleJoinRequest = (requestId, status) => {
+    // status: 'accepted' | 'rejected'
+    const request = joinRequests.find(r => r.id === requestId);
+    if (!request) return { success: false, error: 'İstek bulunamadı.' };
+
+    const targetClass = customClasses.find(c => c.id === request.classId);
+    if (targetClass.teacherId !== user?.id) return { success: false, error: 'Yetkiniz yok.' };
+
+    const updatedRequests = joinRequests.map(r => 
+      r.id === requestId ? { ...r, status } : r
+    );
+    setJoinRequests(updatedRequests);
+    localStorage.setItem('epusula_join_requests', JSON.stringify(updatedRequests));
+
+    if (status === 'accepted') {
+      const updatedClasses = customClasses.map(c => 
+        c.id === request.classId && !c.studentIds.includes(request.studentId)
+          ? { ...c, studentIds: [...c.studentIds, request.studentId] }
+          : c
+      );
+      setCustomClasses(updatedClasses);
+      localStorage.setItem('epusula_custom_classes', JSON.stringify(updatedClasses));
+    }
+    return { success: true };
+  };
+
   const value = {
     user,
     login,
@@ -148,7 +233,12 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     logout,
     loading,
-    allUsers
+    allUsers,
+    customClasses,
+    joinRequests,
+    createCustomClass,
+    requestJoinClass,
+    handleJoinRequest
   };
 
   return (

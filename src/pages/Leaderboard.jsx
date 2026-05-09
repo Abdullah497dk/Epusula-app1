@@ -4,19 +4,30 @@ import { Trophy, Search, User, X } from 'lucide-react';
 import { classes } from '../data/mockData';
 
 const Leaderboard = () => {
-  const { user, allUsers } = useAuth();
-  const [viewMode, setViewMode] = useState('global'); // 'global' or 'class'
+  const { user, allUsers, customClasses } = useAuth();
+  const [viewMode, setViewMode] = useState('global'); // 'global', 'main_class', or customClass.id
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const getClassName = (classId) => {
     return classes.find(c => c.id === classId)?.name || 'Bilinmiyor';
   };
 
+  const myJoinedClasses = useMemo(() => {
+    if (user?.role !== 'student') return [];
+    return customClasses?.filter(c => c.studentIds.includes(user.id)) || [];
+  }, [customClasses, user]);
+
   const rankedUsers = useMemo(() => {
     let filteredUsers = allUsers.filter(u => u.role === 'student');
     
-    if (viewMode === 'class' && user?.classId) {
+    if (viewMode === 'main_class' && user?.classId) {
       filteredUsers = filteredUsers.filter(u => u.classId === user.classId);
+    } else if (viewMode !== 'global') {
+      // Must be a custom class ID
+      const targetClass = customClasses?.find(c => c.id === viewMode);
+      if (targetClass) {
+        filteredUsers = filteredUsers.filter(u => targetClass.studentIds.includes(u.id));
+      }
     }
     
     // Sort by score descending, then by totalAnswered descending
@@ -28,7 +39,7 @@ const Leaderboard = () => {
       const totalB = b.stats?.totalAnswered || 0;
       return totalB - totalA;
     });
-  }, [allUsers, viewMode, user]);
+  }, [allUsers, viewMode, user, customClasses]);
 
   const topUsers = rankedUsers.slice(0, 50);
 
@@ -69,7 +80,7 @@ const Leaderboard = () => {
             borderRadius: 'var(--radius-md)'
           }}>
             <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>
-              {viewMode === 'global' ? 'Genel Sıra' : 'Sınıf Sıran'}
+              {viewMode === 'global' ? 'Genel Sıra' : viewMode === 'main_class' ? 'Sınıf Sıran' : 'Özel Sınıf Sıran'}
             </span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
               <span style={{ fontWeight: 800, fontSize: '1.25rem' }}>#{myRank}</span>
@@ -80,23 +91,33 @@ const Leaderboard = () => {
       </div>
 
       {/* Toggles */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
         <button 
           onClick={() => setViewMode('global')}
           className={`btn ${viewMode === 'global' ? 'btn-primary' : 'btn-outline'}`}
-          style={{ flex: 1 }}
+          style={{ flexShrink: 0 }}
         >
           Genel Sıralama
         </button>
         {user?.role === 'student' && user?.classId && (
           <button 
-            onClick={() => setViewMode('class')}
-            className={`btn ${viewMode === 'class' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1 }}
+            onClick={() => setViewMode('main_class')}
+            className={`btn ${viewMode === 'main_class' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ flexShrink: 0 }}
           >
-            Sınıf Sıralaması ({getClassName(user.classId)})
+            {getClassName(user.classId)}
           </button>
         )}
+        {myJoinedClasses.map(c => (
+          <button 
+            key={c.id}
+            onClick={() => setViewMode(c.id)}
+            className={`btn ${viewMode === c.id ? 'btn-primary' : 'btn-outline'}`}
+            style={{ flexShrink: 0 }}
+          >
+            {c.name}
+          </button>
+        ))}
       </div>
 
       {/* Leaderboard List */}

@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
+import MyClasses from './pages/MyClasses';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -51,6 +52,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
                 <Leaderboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/my-classes" 
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher']}>
+                <MyClasses />
               </ProtectedRoute>
             } 
           />
