@@ -87,7 +87,8 @@ const StudentDashboard = () => {
       // Add activity log
       addActivity(user.id, {
         type: 'test_completed',
-        count: questions.length,
+        count: currentScore,
+        total: questions.length,
         date: now
       });
 

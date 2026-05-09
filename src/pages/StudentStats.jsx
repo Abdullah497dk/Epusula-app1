@@ -84,7 +84,7 @@ const StudentStats = () => {
           if (lastAct.type === 'login') {
             actionMsg = 'Sisteme giriş yaptı';
           } else if (lastAct.type === 'test_completed') {
-            actionMsg = `Günün görevini tamamladı (${lastAct.count} soru çözüldü)`;
+            actionMsg = `Günün görevini tamamladı (${lastAct.total ? `${lastAct.count}/${lastAct.total} doğru` : `${lastAct.count} soru`} çözüldü)`;
           }
 
           return (

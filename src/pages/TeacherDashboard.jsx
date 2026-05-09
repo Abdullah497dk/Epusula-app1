@@ -176,7 +176,7 @@ const TeacherDashboard = () => {
         if (act.type === 'login') {
           actionMsg = 'Giriş yapıldı';
         } else if (act.type === 'test_completed') {
-          actionMsg = `${act.count} soru çözüldü`;
+          actionMsg = act.total ? `${act.total} sorudan ${act.count} doğru çözüldü` : `${act.count} soru çözüldü`;
         }
         return {
           userId: act.userId,

@@ -114,6 +114,26 @@ const Layout = ({ children }) => {
                 Pano (Dashboard)
               </Link>
             </li>
+            {user?.role === 'student' && (
+              <li className="nav-item">
+                <Link 
+                  to="/my-stats" 
+                  onClick={() => setSidebarOpen(false)}
+                  style={{ 
+                    display: 'block', 
+                    padding: '0.75rem 1rem', 
+                    borderRadius: 'var(--radius-sm)', 
+                    backgroundColor: location.pathname === '/my-stats' ? 'var(--color-purple)' : 'transparent', 
+                    color: location.pathname === '/my-stats' ? 'var(--color-white)' : 'var(--color-black)',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  İstatistiklerim
+                </Link>
+              </li>
+            )}
             <li className="nav-item">
               <Link 
                 to="/leaderboard" 
