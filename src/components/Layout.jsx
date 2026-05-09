@@ -4,7 +4,7 @@ import { LogOut, Menu, X, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Layout = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, joinRequests, customClasses } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -138,7 +138,9 @@ const Layout = ({ children }) => {
                   to="/my-classes" 
                   onClick={() => setSidebarOpen(false)}
                   style={{ 
-                    display: 'block', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     padding: '0.75rem 1rem', 
                     borderRadius: 'var(--radius-sm)', 
                     backgroundColor: location.pathname === '/my-classes' ? 'var(--color-purple)' : 'transparent', 
@@ -148,7 +150,31 @@ const Layout = ({ children }) => {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  Sınıflarım
+                  <span>Sınıflarım</span>
+                  {user?.role === 'teacher' && (() => {
+                    const myClasses = (customClasses || []).filter(c => c.teacherId === user.id);
+                    const myClassIds = myClasses.map(c => c.id);
+                    const pendingCount = (joinRequests || []).filter(r => r.status === 'pending' && myClassIds.includes(r.classId)).length;
+                    
+                    if (pendingCount > 0) {
+                      return (
+                        <span style={{ 
+                          backgroundColor: '#ef4444', 
+                          color: 'white', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 700, 
+                          padding: '0.1rem 0.5rem', 
+                          borderRadius: '10px',
+                          marginLeft: '0.5rem',
+                          minWidth: '20px',
+                          textAlign: 'center'
+                        }}>
+                          {pendingCount > 9 ? '9+' : pendingCount}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </Link>
               </li>
             )}

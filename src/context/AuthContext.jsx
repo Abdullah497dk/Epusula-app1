@@ -13,14 +13,25 @@ export const AuthProvider = ({ children }) => {
   const [joinRequests, setJoinRequests] = useState([]);
 
   useEffect(() => {
+    // Helper to get calendar day difference
+    const getDaysDiff = (date1, date2) => {
+      const d1 = new Date(date1);
+      d1.setHours(0, 0, 0, 0);
+      const d2 = new Date(date2);
+      d2.setHours(0, 0, 0, 0);
+      return Math.floor((d1 - d2) / (1000 * 60 * 60 * 24));
+    };
+
     // Load users from local storage or initialize with mockData
     const storedUsers = localStorage.getItem('epusula_all_users');
+    let currentAllUsers = [];
     if (storedUsers) {
-      setAllUsers(JSON.parse(storedUsers));
+      currentAllUsers = JSON.parse(storedUsers);
     } else {
-      setAllUsers(initialUsers);
+      currentAllUsers = initialUsers;
       localStorage.setItem('epusula_all_users', JSON.stringify(initialUsers));
     }
+    setAllUsers(currentAllUsers);
 
     const storedClasses = localStorage.getItem('epusula_custom_classes');
     if (storedClasses) {
@@ -37,31 +48,22 @@ export const AuthProvider = ({ children }) => {
     if (storedUser) {
       let parsedUser = JSON.parse(storedUser);
       
-      // Streak Reset Logic: Eğer son test tarihinden itibaren 1 günden fazla geçmişse seriyi sıfırla
+      // Streak Reset Logic: Gün sonu kontrolü
       if (parsedUser.stats?.lastTestDate) {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const diffDays = getDaysDiff(today, parsedUser.stats.lastTestDate);
         
-        const lastDate = new Date(parsedUser.stats.lastTestDate);
-        lastDate.setHours(0, 0, 0, 0);
-        
-        const diffTime = today - lastDate;
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
+        // Eğer 1 günden fazla geçmişse (yani dün pas geçilmişse) seriyi sıfırla
         if (diffDays > 1 && parsedUser.stats.streak > 0) {
           parsedUser.stats.streak = 0;
           localStorage.setItem('epusula_user', JSON.stringify(parsedUser));
           
           // allUsers listesini de güncelle
-          const storedAll = localStorage.getItem('epusula_all_users');
-          if (storedAll) {
-            const allParsed = JSON.parse(storedAll);
-            const updatedAll = allParsed.map(u => 
-              u.id === parsedUser.id ? { ...u, stats: { ...u.stats, streak: 0 } } : u
-            );
-            localStorage.setItem('epusula_all_users', JSON.stringify(updatedAll));
-            setAllUsers(updatedAll);
-          }
+          const updatedAll = currentAllUsers.map(u => 
+            u.id === parsedUser.id ? { ...u, stats: { ...u.stats, streak: 0 } } : u
+          );
+          localStorage.setItem('epusula_all_users', JSON.stringify(updatedAll));
+          setAllUsers(updatedAll);
         }
       }
       setUser(parsedUser);
@@ -81,12 +83,16 @@ export const AuthProvider = ({ children }) => {
       // Streak Check on Login
       if (userWithoutPass.stats?.lastTestDate) {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
         const lastDate = new Date(userWithoutPass.stats.lastTestDate);
-        lastDate.setHours(0, 0, 0, 0);
         
-        const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+        const d1 = new Date(today);
+        d1.setHours(0, 0, 0, 0);
+        const d2 = new Date(lastDate);
+        d2.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((d1 - d2) / (1000 * 60 * 60 * 24));
+
         if (diffDays > 1) {
+          if (!userWithoutPass.stats) userWithoutPass.stats = {};
           userWithoutPass.stats.streak = 0;
         }
       }

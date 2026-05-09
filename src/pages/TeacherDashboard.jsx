@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Users, Activity, Target, AlertTriangle, Filter } from 'lucide-react';
 
 const StatCards = ({ title, description, stats }) => {
+  const navigate = useNavigate();
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -84,7 +86,27 @@ const StatCards = ({ title, description, stats }) => {
               <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)' }}>Henüz aktivite yok.</p>
             ) : (
               stats.recentActivity.map((act, i) => (
-                <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.75rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
+                <div 
+                  key={i} 
+                  onClick={() => act.userId && navigate(`/student-stats/${act.userId}`)}
+                  style={{ 
+                    display: 'flex', 
+                    gap: '1rem', 
+                    padding: '0.75rem', 
+                    backgroundColor: 'var(--color-white-off)', 
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s, background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(112, 38, 185, 0.05)';
+                    e.currentTarget.style.transform = 'translateX(4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-white-off)';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                >
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-purple-light)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0 }}>
                     {act.name.charAt(0)}
                   </div>
@@ -119,13 +141,13 @@ const TeacherDashboard = () => {
     const totalStudents = studentList.length;
     let totalAnswered = 0;
     let totalCorrect = 0;
-    let activeToday = 0; // mock: if streak > 0, consider active today
+    let activeToday = 0; // Aktif öğrenci: serisi (streak) 0'dan büyük olanlar
     
     studentList.forEach(s => {
       if (s.stats) {
         totalAnswered += s.stats.totalAnswered || 0;
         totalCorrect += s.stats.correctAnswers || 0;
-        if (s.stats.streak > 0) activeToday++;
+        if ((s.stats.streak || 0) > 0) activeToday++;
       }
     });
     
@@ -137,6 +159,7 @@ const TeacherDashboard = () => {
       if (s.activityLog) {
         s.activityLog.forEach(log => {
           allActivities.push({
+            userId: s.id,
             name: s.name,
             ...log
           });
@@ -156,6 +179,7 @@ const TeacherDashboard = () => {
           actionMsg = `${act.count} soru çözüldü`;
         }
         return {
+          userId: act.userId,
           name: act.name,
           date: act.date,
           action: actionMsg
