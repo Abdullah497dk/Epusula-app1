@@ -127,3 +127,32 @@ button {
   background-color: var(--color-purple-light);
   color: var(--color-white);
 }
+
+/* Responsive Utilities */
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  .show-mobile {
+    display: block !important;
+  }
+
+  .leaderboard-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+    text-align: left;
+  }
+
+  .leaderboard-header > div:last-child {
+    align-self: stretch;
+    align-items: center !important;
+    flex-direction: row !important;
+    justify-content: space-between;
+  }
+}

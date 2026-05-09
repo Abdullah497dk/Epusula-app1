@@ -41,20 +41,21 @@ const Leaderboard = () => {
   return (
     <div style={{ paddingBottom: '2rem' }}>
       {/* Header Banner */}
-      <div className="card glass" style={{ 
+      <div className="card glass leaderboard-header" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         background: 'linear-gradient(to right, #3b82f6, #8b5cf6)',
         color: 'var(--color-white)',
         border: 'none',
-        marginBottom: '2rem'
+        marginBottom: '1.5rem',
+        padding: '1.25rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Trophy size={36} color="#fcd34d" />
+          <Trophy size={32} color="#fcd34d" />
           <div>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.25rem', color: 'white' }}>Liderlik Tablosu</h2>
-            <p style={{ opacity: 0.9, fontSize: '0.95rem' }}>Epusula Şampiyonları</p>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.15rem', color: 'white' }}>Liderlik Tablosu</h2>
+            <p style={{ opacity: 0.9, fontSize: '0.85rem' }}>Epusula Şampiyonları</p>
           </div>
         </div>
         
@@ -64,15 +65,15 @@ const Leaderboard = () => {
             flexDirection: 'column', 
             alignItems: 'flex-end',
             backgroundColor: 'rgba(255,255,255,0.2)',
-            padding: '0.75rem 1.5rem',
+            padding: '0.5rem 1rem',
             borderRadius: 'var(--radius-md)'
           }}>
-            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>
-              {viewMode === 'global' ? 'Genel Sıralaman' : 'Sınıf Sıralaman'}
+            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>
+              {viewMode === 'global' ? 'Genel Sıra' : 'Sınıf Sıran'}
             </span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <span style={{ fontWeight: 800, fontSize: '1.5rem' }}>#{myRank}</span>
-              <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>({user.stats?.score || 0} Puan)</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.25rem' }}>#{myRank}</span>
+              <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>({user.stats?.score || 0})</span>
             </div>
           </div>
         )}
@@ -100,63 +101,71 @@ const Leaderboard = () => {
 
       {/* Leaderboard List */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: 'var(--color-white-off)', borderBottom: '1px solid var(--color-gray)' }}>
-              <th style={{ padding: '1rem', textAlign: 'center', width: '60px' }}>#</th>
-              <th style={{ padding: '1rem', textAlign: 'left' }}>Öğrenci</th>
-              <th style={{ padding: '1rem', textAlign: 'center' }}>Sınıf</th>
-              <th style={{ padding: '1rem', textAlign: 'center' }}>Puan</th>
-              <th style={{ padding: '1rem', textAlign: 'center' }}>Aksiyon</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topUsers.length === 0 ? (
-              <tr>
-                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-black-light)' }}>
-                  Henüz kimse puan kazanmamış.
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '350px' }}>
+            <thead>
+              <tr style={{ backgroundColor: 'var(--color-white-off)', borderBottom: '1px solid var(--color-gray)' }}>
+                <th style={{ padding: '1rem 0.5rem', textAlign: 'center', width: '50px' }}>#</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Öğrenci</th>
+                <th className="hide-mobile" style={{ padding: '1rem', textAlign: 'center' }}>Sınıf</th>
+                <th style={{ padding: '1rem', textAlign: 'center' }}>Puan</th>
+                <th style={{ padding: '1rem', textAlign: 'center', width: '100px' }}>Aksiyon</th>
               </tr>
-            ) : (
-              topUsers.map((u, index) => (
-                <tr key={u.id} style={{ 
-                  borderBottom: '1px solid var(--color-gray)',
-                  backgroundColor: u.id === user?.id ? 'rgba(112, 38, 185, 0.05)' : 'transparent',
-                  transition: 'background-color 0.2s'
-                }}>
-                  <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 700, color: index < 3 ? 'var(--color-purple)' : 'var(--color-black)' }}>
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
-                  </td>
-                  <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--color-gray)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
-                    }}>
-                      {u.profilePic ? <img src={u.profilePic} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}}/> : <User size={18} color="var(--color-black-light)" />}
-                    </div>
-                    <span style={{ fontWeight: u.id === user?.id ? 700 : 500, color: 'var(--color-black)' }}>
-                      {u.name} {u.id === user?.id && '(Sen)'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-black-light)', fontSize: '0.9rem' }}>
-                    {getClassName(u.classId)}
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: 'var(--color-blue)' }}>
-                    {u.stats?.score || 0}
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'center' }}>
-                    <button 
-                      onClick={() => setSelectedProfile(u)}
-                      className="btn btn-outline" 
-                      style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
-                    >
-                      Profile Bak
-                    </button>
+            </thead>
+            <tbody>
+              {topUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-black-light)' }}>
+                    Henüz kimse puan kazanmamış.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                topUsers.map((u, index) => (
+                  <tr key={u.id} style={{ 
+                    borderBottom: '1px solid var(--color-gray)',
+                    backgroundColor: u.id === user?.id ? 'rgba(112, 38, 185, 0.05)' : 'transparent',
+                    transition: 'background-color 0.2s'
+                  }}>
+                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center', fontWeight: 700, color: index < 3 ? 'var(--color-purple)' : 'var(--color-black)', fontSize: '1.1rem' }}>
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                    </td>
+                    <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="hide-mobile" style={{
+                        width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--color-gray)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
+                      }}>
+                        {u.profilePic ? <img src={u.profilePic} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}}/> : <User size={18} color="var(--color-black-light)" />}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: u.id === user?.id ? 700 : 500, color: 'var(--color-black)', fontSize: '0.95rem' }}>
+                          {u.name} {u.id === user?.id && '(Sen)'}
+                        </span>
+                        <span className="show-mobile" style={{ fontSize: '0.75rem', color: 'var(--color-black-light)' }}>
+                          {getClassName(u.classId)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="hide-mobile" style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-black-light)', fontSize: '0.9rem' }}>
+                      {getClassName(u.classId)}
+                    </td>
+                    <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 700, color: 'var(--color-blue)', fontSize: '1.05rem' }}>
+                      {u.stats?.score || 0}
+                    </td>
+                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                      <button 
+                        onClick={() => setSelectedProfile(u)}
+                        className="btn btn-outline" 
+                        style={{ padding: '0.4rem', fontSize: '0.7rem', minWidth: '60px' }}
+                      >
+                        <span className="hide-mobile">Profile Bak</span>
+                        <User className="show-mobile" size={16} style={{ margin: '0 auto' }} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Public Profile Modal */}
