@@ -2,92 +2,108 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Users, Activity, Target, AlertTriangle, Filter } from 'lucide-react';
 
-const StatCards = ({ title, description, stats }) => (
-  <div style={{ marginBottom: '3rem' }}>
-    <div style={{ marginBottom: '1.5rem' }}>
-      <h2 style={{ fontSize: '1.5rem', color: 'var(--color-black)', marginBottom: '0.25rem' }}>{title}</h2>
-      <p style={{ color: 'var(--color-black-light)' }}>{description}</p>
-    </div>
+const StatCards = ({ title, description, stats }) => {
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    
+    if (isToday) {
+      return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
-    {/* KPI Cards */}
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ padding: '1rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%', color: 'var(--color-blue)' }}>
-          <Users size={24} />
-        </div>
-        <div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', margin: 0 }}>Toplam Öğrenci</p>
-          <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{stats.totalStudents}</p>
-        </div>
+  return (
+    <div style={{ marginBottom: '3rem' }}>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--color-black)', marginBottom: '0.25rem' }}>{title}</h2>
+        <p style={{ color: 'var(--color-black-light)' }}>{description}</p>
       </div>
 
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ padding: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '50%', color: '#22c55e' }}>
-          <Activity size={24} />
-        </div>
-        <div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', margin: 0 }}>Aktif Öğrenciler</p>
-          <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
-            {stats.activeToday} 
-            <span style={{ fontSize: '0.9rem', color: '#22c55e', fontWeight: 500, marginLeft: '0.5rem' }}>
-              ({stats.totalStudents > 0 ? Math.round((stats.activeToday/stats.totalStudents)*100) : 0}%)
-            </span>
-          </p>
-        </div>
-      </div>
-
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ padding: '1rem', backgroundColor: 'rgba(112, 38, 185, 0.1)', borderRadius: '50%', color: 'var(--color-purple)' }}>
-          <Target size={24} />
-        </div>
-        <div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', margin: 0 }}>Ortalama Başarı</p>
-          <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>%{stats.averageSuccessRate}</p>
-        </div>
-      </div>
-    </div>
-
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-      {/* Alerts / Insights Area */}
-      <div className="card">
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-gray)', paddingBottom: '0.5rem' }}>Analizler</h3>
-        
-        <div style={{ padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid #ef4444', borderRadius: 'var(--radius-sm)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#b91c1c', marginBottom: '0.5rem' }}>
-            <AlertTriangle size={18} />
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Durum</span>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%', color: 'var(--color-blue)' }}>
+            <Users size={24} />
           </div>
-          <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 500 }}>{stats.weakestUnit}</p>
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', margin: 0 }}>Toplam Öğrenci</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{stats.totalStudents}</p>
+          </div>
         </div>
 
-        <button className="btn btn-outline" style={{ width: '100%', marginTop: '1.5rem' }}>Rapor İndir</button>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '50%', color: '#22c55e' }}>
+            <Activity size={24} />
+          </div>
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', margin: 0 }}>Aktif Öğrenciler</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
+              {stats.activeToday} 
+              <span style={{ fontSize: '0.9rem', color: '#22c55e', fontWeight: 500, marginLeft: '0.5rem' }}>
+                ({stats.totalStudents > 0 ? Math.round((stats.activeToday/stats.totalStudents)*100) : 0}%)
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', backgroundColor: 'rgba(112, 38, 185, 0.1)', borderRadius: '50%', color: 'var(--color-purple)' }}>
+            <Target size={24} />
+          </div>
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', margin: 0 }}>Ortalama Başarı</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>%{stats.averageSuccessRate}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Activity Feed */}
-      <div className="card">
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-gray)', paddingBottom: '0.5rem' }}>Son Aktiviteler</h3>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {stats.recentActivity.length === 0 ? (
-            <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)' }}>Henüz aktivite yok.</p>
-          ) : (
-            stats.recentActivity.map((act, i) => (
-              <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.75rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-purple-light)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0 }}>
-                  {act.name.charAt(0)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        {/* Alerts / Insights Area */}
+        <div className="card">
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-gray)', paddingBottom: '0.5rem' }}>Analizler</h3>
+          
+          <div style={{ padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid #ef4444', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#b91c1c', marginBottom: '0.5rem' }}>
+              <AlertTriangle size={18} />
+              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Durum</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 500 }}>{stats.weakestUnit}</p>
+          </div>
+
+          <button className="btn btn-outline" style={{ width: '100%', marginTop: '1.5rem' }}>Rapor İndir</button>
+        </div>
+
+        {/* Activity Feed */}
+        <div className="card">
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-gray)', paddingBottom: '0.5rem' }}>Son Aktiviteler</h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {stats.recentActivity.length === 0 ? (
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)' }}>Henüz aktivite yok.</p>
+            ) : (
+              stats.recentActivity.map((act, i) => (
+                <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.75rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-purple-light)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0 }}>
+                    {act.name.charAt(0)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>{act.name}</p>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-black-light)' }}>{formatDate(act.date)}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-black-light)' }}>{act.action}</p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>{act.name}</p>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-black-light)' }}>{act.action}</p>
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TeacherDashboard = () => {
   const { user, customClasses, allUsers } = useAuth();
@@ -115,16 +131,43 @@ const TeacherDashboard = () => {
     
     const averageSuccessRate = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
+    // Collect activities from all students in this list
+    const allActivities = [];
+    studentList.forEach(s => {
+      if (s.activityLog) {
+        s.activityLog.forEach(log => {
+          allActivities.push({
+            name: s.name,
+            ...log
+          });
+        });
+      }
+    });
+
+    // Sort by date descending and take top 5
+    const recentActivity = allActivities
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5)
+      .map(act => {
+        let actionMsg = '';
+        if (act.type === 'login') {
+          actionMsg = 'Giriş yapıldı';
+        } else if (act.type === 'test_completed') {
+          actionMsg = `${act.count} soru çözüldü`;
+        }
+        return {
+          name: act.name,
+          date: act.date,
+          action: actionMsg
+        };
+      });
+
     return {
       totalStudents,
       activeToday,
       averageSuccessRate,
       weakestUnit: totalStudents === 0 ? "Öğrenci Yok" : "Yeterli Veri Yok",
-      recentActivity: studentList.slice(0, 3).map(s => ({
-        userId: s.id,
-        name: s.name,
-        action: s.stats?.score > 0 ? "Soru çözdü" : "Sisteme kayıtlı"
-      }))
+      recentActivity
     };
   };
 

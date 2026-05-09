@@ -5,7 +5,7 @@ import { allQuestions } from '../data/questionsData';
 import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronRight, X, Send } from 'lucide-react';
 
 const StudentDashboard = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, addActivity } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -49,6 +49,7 @@ const StudentDashboard = () => {
 
     if (!alreadyCompletedToday) {
       const todayDate = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
       let points = 10; // Tamamlama puanı
       points += currentScore * 5; // Doğru cevap başı 5 puan
 
@@ -82,6 +83,13 @@ const StudentDashboard = () => {
       const newTotalScore = (user.stats?.score || 0) + points;
       const newTotalAnswered = (user.stats?.totalAnswered || 0) + questions.length;
       const newCorrectAnswers = (user.stats?.correctAnswers || 0) + currentScore;
+
+      // Add activity log
+      addActivity(user.id, {
+        type: 'test_completed',
+        count: questions.length,
+        date: now
+      });
 
       updateProfile({
         stats: {

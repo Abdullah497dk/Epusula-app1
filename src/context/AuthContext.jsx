@@ -74,6 +74,10 @@ export const AuthProvider = ({ children }) => {
     if (foundUser) {
       const { password: _, ...userWithoutPass } = foundUser;
       
+      // Activity Log on Login
+      const now = new Date().toISOString();
+      const loginActivity = { type: 'login', date: now };
+      
       // Streak Check on Login
       if (userWithoutPass.stats?.lastTestDate) {
         const today = new Date();
@@ -84,17 +88,31 @@ export const AuthProvider = ({ children }) => {
         const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
         if (diffDays > 1) {
           userWithoutPass.stats.streak = 0;
-          // allUsers listesini de güncel tutalım
-          const updatedUsers = allUsers.map(u => 
-            u.id === userWithoutPass.id ? { ...u, stats: { ...u.stats, streak: 0 } } : u
-          );
-          setAllUsers(updatedUsers);
-          localStorage.setItem('epusula_all_users', JSON.stringify(updatedUsers));
         }
       }
 
-      setUser(userWithoutPass);
-      localStorage.setItem('epusula_user', JSON.stringify(userWithoutPass));
+      // Update allUsers with new activity and potential streak reset
+      const updatedUsers = allUsers.map(u => {
+        if (u.id === userWithoutPass.id) {
+          const log = u.activityLog || [];
+          return { 
+            ...u, 
+            stats: { ...u.stats, streak: userWithoutPass.stats?.streak || 0 },
+            activityLog: [loginActivity, ...log].slice(0, 50) 
+          };
+        }
+        return u;
+      });
+      setAllUsers(updatedUsers);
+      localStorage.setItem('epusula_all_users', JSON.stringify(updatedUsers));
+
+      const updatedUserWithActivity = { 
+        ...userWithoutPass, 
+        activityLog: [loginActivity, ...(userWithoutPass.activityLog || [])].slice(0, 50) 
+      };
+
+      setUser(updatedUserWithActivity);
+      localStorage.setItem('epusula_user', JSON.stringify(updatedUserWithActivity));
       return { success: true, role: userWithoutPass.role };
     }
     return { success: false, error: 'Geçersiz e-posta veya şifre' };
@@ -109,6 +127,7 @@ export const AuthProvider = ({ children }) => {
     const newUser = {
       id: Date.now().toString(),
       stats: { streak: 0, totalAnswered: 0, correctAnswers: 0, rank: 0, score: 0 },
+      activityLog: [],
       ...userData
     };
 
@@ -151,6 +170,25 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('epusula_user');
+  };
+
+  const addActivity = (userId, activity) => {
+    // activity: { type: 'login' | 'test_completed', count?: number, date: string }
+    const newUsersList = allUsers.map(u => {
+      if (u.id === userId) {
+        const log = u.activityLog || [];
+        return { ...u, activityLog: [activity, ...log].slice(0, 50) };
+      }
+      return u;
+    });
+    setAllUsers(newUsersList);
+    localStorage.setItem('epusula_all_users', JSON.stringify(newUsersList));
+    
+    if (user?.id === userId) {
+      const updatedUser = { ...user, activityLog: [activity, ...(user.activityLog || [])].slice(0, 50) };
+      setUser(updatedUser);
+      localStorage.setItem('epusula_user', JSON.stringify(updatedUser));
+    }
   };
 
   // Custom Class Functions
@@ -238,7 +276,8 @@ export const AuthProvider = ({ children }) => {
     joinRequests,
     createCustomClass,
     requestJoinClass,
-    handleJoinRequest
+    handleJoinRequest,
+    addActivity
   };
 
   return (

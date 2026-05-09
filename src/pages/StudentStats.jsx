@@ -73,10 +73,43 @@ const StudentStats = () => {
       </div>
 
       <div className="card">
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Detaylı Analiz (Gelecekte)</h3>
-        <p style={{ color: 'var(--color-black-light)' }}>
-          Buraya ileride öğrencinin ünite bazlı başarı oranları, zayıf olduğu konular ve gelişim grafikleri eklenecektir.
-        </p>
+        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-gray)', paddingBottom: '0.75rem' }}>Son Aktivite</h3>
+        {student.activityLog && student.activityLog.length > 0 ? (() => {
+          const lastAct = student.activityLog[0];
+          const date = new Date(lastAct.date);
+          const today = new Date();
+          const isToday = date.toDateString() === today.toDateString();
+          
+          let actionMsg = '';
+          if (lastAct.type === 'login') {
+            actionMsg = 'Sisteme giriş yaptı';
+          } else if (lastAct.type === 'test_completed') {
+            actionMsg = `Günün görevini tamamladı (${lastAct.count} soru çözüldü)`;
+          }
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {!isToday && (
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-purple)', fontWeight: 600 }}>
+                  {date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </span>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-purple-light)', borderRadius: '50%', color: 'white' }}>
+                  <Activity size={20} />
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 600 }}>{actionMsg}</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-black-light)' }}>
+                    {date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })() : (
+          <p style={{ color: 'var(--color-black-light)' }}>Henüz kaydedilmiş bir aktivite bulunmuyor.</p>
+        )}
       </div>
     </div>
   );
