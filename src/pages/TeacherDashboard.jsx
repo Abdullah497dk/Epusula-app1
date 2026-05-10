@@ -139,19 +139,37 @@ const TeacherDashboard = () => {
   // Helper to calculate stats for a given array of students
   const calculateStats = (studentList) => {
     const totalStudents = studentList.length;
-    let totalAnswered = 0;
-    let totalCorrect = 0;
     let activeToday = 0; // Aktif öğrenci: serisi (streak) 0'dan büyük olanlar
     
+    // Success rate in last 7 days
+    let totalCorrectLast7 = 0;
+    let totalAnsweredLast7 = 0;
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
     studentList.forEach(s => {
-      if (s.stats) {
-        totalAnswered += s.stats.totalAnswered || 0;
-        totalCorrect += s.stats.correctAnswers || 0;
-        if ((s.stats.streak || 0) > 0) activeToday++;
+      if (s.stats && (s.stats.streak || 0) > 0) {
+        activeToday++;
+      }
+      
+      if (s.activityLog) {
+        s.activityLog.forEach(log => {
+          if (log.type === 'test_completed') {
+            const logDate = new Date(log.date);
+            if (logDate >= sevenDaysAgo) {
+              totalCorrectLast7 += log.count || 0;
+              totalAnsweredLast7 += log.total || 3; // Fallback to 3 if total is missing
+            }
+          }
+        });
       }
     });
     
-    const averageSuccessRate = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+    const averageSuccessRate = totalAnsweredLast7 > 0 
+      ? Math.round((totalCorrectLast7 / totalAnsweredLast7) * 100) 
+      : 0;
 
     // Collect activities from all students in this list
     const allActivities = [];

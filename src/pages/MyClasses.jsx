@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Plus, Search, Check, X, Clock, Shield, Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
+import { Users, Plus, Search, Check, X, Clock, Shield, Eye, EyeOff, Edit2, Trash2, Copy } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
@@ -66,6 +66,12 @@ const MyClasses = () => {
       removeStudentFromClass(classId, studentId);
       setSuccess('Öğrenci sınıftan çıkarıldı.');
     }
+  };
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    setSuccess(`Kod kopyalandı: ${text}`);
+    setTimeout(() => setSuccess(''), 3000);
   };
 
   const handleSearch = (e) => {
@@ -227,7 +233,26 @@ const MyClasses = () => {
                             </button>
                           </div>
                         )}
-                        <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)', marginTop: '0.25rem' }}>Sınıf Kodu: <strong style={{ color: 'var(--color-black)' }}>{c.id}</strong></p>
+                        <div 
+                          onClick={() => handleCopy(c.id)}
+                          style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '0.4rem', 
+                            fontSize: '0.9rem', 
+                            color: 'var(--color-black-light)', 
+                            marginTop: '0.25rem',
+                            cursor: 'pointer',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            transition: 'background 0.2s'
+                          }}
+                          className="hover-bg-gray"
+                          title="Kopyalamak için tıkla"
+                        >
+                          Sınıf Kodu: <strong style={{ color: 'var(--color-black)' }}>{c.id}</strong>
+                          <Copy size={14} opacity={0.6} />
+                        </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.75rem' }}>
                         <button 
@@ -333,6 +358,22 @@ const MyClasses = () => {
                         <div>
                           <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-blue)' }}>{c.name}</h4>
                           <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)' }}>Öğretmen: {getStudentName(c.teacherId)}</p>
+                          <div 
+                            onClick={() => handleCopy(c.id)}
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '0.3rem', 
+                              fontSize: '0.8rem', 
+                              color: 'var(--color-black-light)', 
+                              cursor: 'pointer',
+                              marginTop: '0.2rem'
+                            }}
+                            title="Kopyalamak için tıkla"
+                          >
+                            Kod: <strong style={{ color: 'var(--color-black)' }}>{c.id}</strong>
+                            <Copy size={12} opacity={0.6} />
+                          </div>
                         </div>
                         <button 
                           onClick={() => toggleStudentList(c.id)}
