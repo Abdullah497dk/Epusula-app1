@@ -69,9 +69,43 @@ const MyClasses = () => {
   };
 
   const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    setSuccess(`Kod kopyalandı: ${text}`);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        setSuccess(`Kod kopyalandı: ${text}`);
+      }).catch(err => {
+        fallbackCopyTextToClipboard(text);
+      });
+    } else {
+      fallbackCopyTextToClipboard(text);
+    }
     setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const fallbackCopyTextToClipboard = (text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Ensure it's not visible
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setSuccess(`Kod kopyalandı: ${text}`);
+      } else {
+        setError('Kopyalama başarısız oldu.');
+      }
+    } catch (err) {
+      setError('Kopyalama desteklenmiyor.');
+    }
+
+    document.body.removeChild(textArea);
   };
 
   const handleSearch = (e) => {
