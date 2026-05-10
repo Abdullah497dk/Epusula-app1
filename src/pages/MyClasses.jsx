@@ -266,11 +266,45 @@ const MyClasses = () => {
               {myJoinedClasses.length === 0 ? (
                 <p style={{ color: 'var(--color-black-light)' }}>Henüz hiçbir özel sınıfa katılmadınız.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {myJoinedClasses.map(c => (
-                    <div key={c.id} style={{ padding: '1rem', border: '1px solid var(--color-gray)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white-off)' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 600 }}>{c.name}</h4>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)' }}>Öğretmen: {getStudentName(c.teacherId)}</p>
+                    <div key={c.id} style={{ padding: '1.25rem', border: '1px solid var(--color-gray)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <div>
+                          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-blue)' }}>{c.name}</h4>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--color-black-light)' }}>Öğretmen: {getStudentName(c.teacherId)}</p>
+                        </div>
+                        <button 
+                          onClick={() => toggleStudentList(c.id)}
+                          className={`btn ${selectedClassForList === c.id ? 'btn-primary' : 'btn-outline'}`}
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                          {selectedClassForList === c.id ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {selectedClassForList === c.id ? 'Kapat' : 'İncele'}
+                        </button>
+                      </div>
+
+                      {selectedClassForList === c.id && (
+                        <div style={{ borderTop: '1px solid var(--color-gray)', paddingTop: '1rem', animation: 'fadeIn 0.3s ease' }}>
+                          <p style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Sınıf Arkadaşlarım ({c.studentIds.length})</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {c.studentIds.map(studentId => (
+                              <div key={studentId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
+                                <span style={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                                  {getStudentName(studentId)} {studentId === user.id ? '(Sen)' : ''}
+                                </span>
+                                <Link 
+                                  to={`/student-stats/${studentId}`} 
+                                  className="btn btn-primary"
+                                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.7rem' }}
+                                >
+                                  Bilgiler
+                                </Link>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
