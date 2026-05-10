@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Plus, Search, Check, X, Clock, Shield, Eye, EyeOff } from 'lucide-react';
+import { Users, Plus, Search, Check, X, Clock, Shield, Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
 const MyClasses = () => {
-  const { user, customClasses, joinRequests, createCustomClass, requestJoinClass, handleJoinRequest, allUsers } = useAuth();
+  const { 
+    user, 
+    customClasses, 
+    joinRequests, 
+    createCustomClass, 
+    requestJoinClass, 
+    handleJoinRequest, 
+    allUsers,
+    updateClassName,
+    removeStudentFromClass
+  } = useAuth();
   
   const [newClassName, setNewClassName] = useState('');
   const [searchClassId, setSearchClassId] = useState('');
@@ -13,6 +23,8 @@ const MyClasses = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedClassForList, setSelectedClassForList] = useState(null);
+  const [editingClassId, setEditingClassId] = useState(null);
+  const [tempClassName, setTempClassName] = useState('');
 
   const isTeacher = user?.role === 'teacher';
 
@@ -39,6 +51,20 @@ const MyClasses = () => {
       setNewClassName('');
     } else {
       setError(res.error);
+    }
+  };
+
+  const handleUpdateClassName = (classId) => {
+    if (!tempClassName.trim()) return;
+    updateClassName(classId, tempClassName);
+    setEditingClassId(null);
+    setSuccess('Sınıf adı güncellendi.');
+  };
+
+  const handleRemoveStudent = (classId, studentId) => {
+    if (window.confirm(`${getStudentName(studentId)} adlı öğrenciyi sınıftan çıkarmak istediğinize emin misiniz?`)) {
+      removeStudentFromClass(classId, studentId);
+      setSuccess('Öğrenci sınıftan çıkarıldı.');
     }
   };
 
@@ -174,8 +200,33 @@ const MyClasses = () => {
                 {myCreatedClasses.map(c => (
                   <div key={c.id} style={{ padding: '1.25rem', border: '1px solid var(--color-gray)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-                      <div>
-                        <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-purple)' }}>{c.name}</h4>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        {editingClassId === c.id ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input 
+                              type="text" 
+                              value={tempClassName} 
+                              onChange={(e) => setTempClassName(e.target.value)}
+                              className="input"
+                              style={{ padding: '0.4rem', fontSize: '0.95rem' }}
+                            />
+                            <button onClick={() => handleUpdateClassName(c.id)} style={{ color: '#22c55e' }}><Check size={18} /></button>
+                            <button onClick={() => setEditingClassId(null)} style={{ color: '#ef4444' }}><X size={18} /></button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-purple)' }}>{c.name}</h4>
+                            <button 
+                              onClick={() => {
+                                setEditingClassId(c.id);
+                                setTempClassName(c.name);
+                              }}
+                              style={{ color: 'var(--color-black-light)', opacity: 0.6, padding: '2px' }}
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          </div>
+                        )}
                         <p style={{ fontSize: '0.9rem', color: 'var(--color-black-light)', marginTop: '0.25rem' }}>Sınıf Kodu: <strong style={{ color: 'var(--color-black)' }}>{c.id}</strong></p>
                       </div>
                       <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -207,13 +258,22 @@ const MyClasses = () => {
                             {c.studentIds.map(studentId => (
                               <div key={studentId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
                                 <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{getStudentName(studentId)}</span>
-                                <Link 
-                                  to={`/student-stats/${studentId}`} 
-                                  className="btn btn-primary"
-                                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
-                                >
-                                  İstatistikler
-                                </Link>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                  <Link 
+                                    to={`/student-stats/${studentId}`} 
+                                    className="btn btn-primary"
+                                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+                                  >
+                                    İstatistikler
+                                  </Link>
+                                  <button 
+                                    onClick={() => handleRemoveStudent(c.id, studentId)}
+                                    title="Sınıftan Çıkar"
+                                    style={{ color: '#ef4444', padding: '0.4rem', opacity: 0.7 }}
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>

@@ -278,6 +278,24 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
+  const updateClassName = (classId, newName) => {
+    const updatedClasses = customClasses.map(c => 
+      c.id === classId ? { ...c, name: newName } : c
+    );
+    setCustomClasses(updatedClasses);
+    localStorage.setItem('epusula_custom_classes', JSON.stringify(updatedClasses));
+    return { success: true };
+  };
+
+  const removeStudentFromClass = (classId, studentId) => {
+    const updatedClasses = customClasses.map(c => 
+      c.id === classId ? { ...c, studentIds: c.studentIds.filter(id => id !== studentId) } : c
+    );
+    setCustomClasses(updatedClasses);
+    localStorage.setItem('epusula_custom_classes', JSON.stringify(updatedClasses));
+    return { success: true };
+  };
+
   const value = {
     user,
     login,
@@ -291,7 +309,9 @@ export const AuthProvider = ({ children }) => {
     createCustomClass,
     requestJoinClass,
     handleJoinRequest,
-    addActivity
+    addActivity,
+    updateClassName,
+    removeStudentFromClass
   };
 
   return (
