@@ -26,9 +26,31 @@ const StudentDashboard = () => {
         setSubmitted(true);
       }
     }
-    // A real app would fetch from API mapping user.classId -> today's questions
-    // Here we're mocking fetching latest 3 questions for their class
-    const todaysQs = [...dailyQuestions, ...allQuestions].filter(q => q.classId === user.classId).slice(0, 3);
+    
+    // Get all questions for this user's class
+    const allClassQs = [...dailyQuestions, ...allQuestions].filter(q => q.classId === user.classId);
+    
+    // Determine the "Day Index" globally based on a fixed start date
+    // Let's use '2026-05-01' as the start date
+    const startDate = new Date('2026-05-01T00:00:00Z');
+    const now = new Date();
+    // Start of current day
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const daysPassed = Math.floor((startOfToday - startDate) / (1000 * 60 * 60 * 24));
+    
+    // Ensure we don't get negative days
+    const safeDaysPassed = Math.max(0, daysPassed);
+    
+    // 3 questions per day
+    const startIndex = (safeDaysPassed * 3) % Math.max(1, allClassQs.length);
+    
+    let todaysQs = allClassQs.slice(startIndex, startIndex + 3);
+    
+    // If wrapping around at the end
+    if (todaysQs.length < 3 && allClassQs.length >= 3) {
+      todaysQs = [...todaysQs, ...allClassQs.slice(0, 3 - todaysQs.length)];
+    }
+
     setQuestions(todaysQs);
   }, [user]);
 
@@ -89,7 +111,12 @@ const StudentDashboard = () => {
         type: 'test_completed',
         count: currentScore,
         total: questions.length,
-        date: now
+        date: now,
+        details: questions.map(q => ({
+          id: q.id,
+          unitId: q.unitId,
+          isCorrect: answers[q.id] === q.correctAnswer
+        }))
       };
       const newActivityLog = [newActivity, ...(user.activityLog || [])].slice(0, 50);
 

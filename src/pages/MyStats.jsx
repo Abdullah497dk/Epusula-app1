@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Award, Target, Activity, Flame, Calendar as CalendarIcon, TrendingUp } from 'lucide-react';
+import { Award, Target, Activity, Flame, Calendar as CalendarIcon, TrendingUp, BookOpen } from 'lucide-react';
+import { units } from '../data/mockData';
 
 // Weekly Trends Component (Line Chart)
 const WeeklyTrends = ({ activityLog }) => {
@@ -327,6 +328,91 @@ const ContributionGraph = ({ activityLog }) => {
   );
 };
 
+// Topic Analysis Component
+const TopicAnalysis = ({ activityLog }) => {
+  const analysis = useMemo(() => {
+    // Collect last 15 questions per unit
+    const unitQuestions = {};
+    
+    if (activityLog) {
+      // activityLog is ordered newest to oldest
+      activityLog.forEach(log => {
+        if (log.type === 'test_completed' && log.details) {
+          log.details.forEach(detail => {
+            if (!unitQuestions[detail.unitId]) {
+              unitQuestions[detail.unitId] = [];
+            }
+            if (unitQuestions[detail.unitId].length < 15) {
+              unitQuestions[detail.unitId].push(detail.isCorrect);
+            }
+          });
+        }
+      });
+    }
+
+    // Calculate percentages
+    const results = [];
+    Object.keys(unitQuestions).forEach(unitId => {
+      const qList = unitQuestions[unitId];
+      if (qList.length > 0) {
+        const correctCount = qList.filter(c => c).length;
+        const total = qList.length;
+        const percentage = Math.round((correctCount / total) * 100);
+        
+        // Find unit name
+        const unitName = units.find(u => u.id === unitId)?.name || 'Bilinmeyen Ünite';
+        
+        results.push({
+          unitId,
+          unitName,
+          percentage,
+          correctCount,
+          total
+        });
+      }
+    });
+
+    // Sort by percentage ascending
+    return results.sort((a, b) => a.percentage - b.percentage);
+  }, [activityLog]);
+
+  return (
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <BookOpen size={20} color="var(--color-purple)" />
+        <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--color-black)' }}>Konu Analizi (Son 15 Soru)</h3>
+      </div>
+      
+      {analysis.length === 0 ? (
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-black-light)', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-md)' }}>
+          Henüz yeterli veri yok. Test çözdükçe ünite analizlerin burada görünecektir.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {analysis.map((item) => (
+            <div key={item.unitId} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--color-black)' }}>{item.unitName}</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: item.percentage >= 70 ? '#22c55e' : item.percentage >= 40 ? '#f59e0b' : '#ef4444' }}>
+                  %{item.percentage} ({item.correctCount}/{item.total})
+                </span>
+              </div>
+              <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--color-gray)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ 
+                  height: '100%', 
+                  width: `${item.percentage}%`, 
+                  backgroundColor: item.percentage >= 70 ? '#22c55e' : item.percentage >= 40 ? '#f59e0b' : '#ef4444',
+                  transition: 'width 0.5s ease-out'
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MyStats = () => {
   const { user } = useAuth();
   
@@ -398,15 +484,8 @@ const MyStats = () => {
         <ContributionGraph activityLog={activityLog} />
       </div>
 
-      {/* Additional Details Placeholder */}
-      <div className="card" style={{ backgroundColor: 'var(--color-white-off)', border: '1px dashed var(--color-gray)' }}>
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--color-black-light)' }}>Yakında Eklenecek Veriler</h3>
-        <ul style={{ color: 'var(--color-black-light)', fontSize: '0.9rem', paddingLeft: '1.25rem', margin: 0 }}>
-          <li style={{ marginBottom: '0.5rem' }}>Ünite bazlı başarı oranları</li>
-          <li style={{ marginBottom: '0.5rem' }}>Sınıf içi sıralama grafikleri</li>
-          <li>Zamanla net gelişim analizi</li>
-        </ul>
-      </div>
+      {/* Topic Analysis */}
+      <TopicAnalysis activityLog={activityLog} />
     </div>
   );
 };
