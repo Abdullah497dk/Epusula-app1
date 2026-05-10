@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dailyQuestions, units } from '../data/mockData';
 import { allQuestions } from '../data/questionsData';
-import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronRight, X, Send } from 'lucide-react';
+import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronRight, X, Send, Trophy } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const StudentDashboard = () => {
   const { user, updateProfile, addActivity } = useAuth();
@@ -121,17 +122,53 @@ const StudentDashboard = () => {
         alignItems: 'center', 
         background: 'linear-gradient(to right, var(--color-purple), var(--color-purple-dark))',
         color: 'var(--color-white)',
-        border: 'none'
+        border: 'none',
+        flexWrap: 'wrap',
+        gap: '1rem'
       }}>
-        <div>
+        <div style={{ flex: 1, minWidth: '150px' }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>İyi çalışmalar, {user?.name.split(' ')[0]}!</h2>
           <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Serin: <span style={{ fontWeight: 700 }}>{user?.stats?.streak} Gün</span> 🔥</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)' }}>
-          <Award size={24} color="#fcd34d" />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>Puan</span>
-            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{user?.stats?.score || 0}</span>
+        
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {/* Rank Card - Clickable */}
+          <Link 
+            to="/leaderboard" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              background: 'rgba(255,255,255,0.15)', 
+              padding: '0.5rem 1rem', 
+              borderRadius: 'var(--radius-md)',
+              textDecoration: 'none',
+              color: 'inherit',
+              transition: 'transform 0.2s, background 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+            }}
+          >
+            <Trophy size={20} color="#fcd34d" />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>Sıralama</span>
+              <span style={{ fontWeight: 700, fontSize: '1rem' }}>{user?.stats?.rank || '-'}.</span>
+            </div>
+          </Link>
+
+          {/* Score Card */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)' }}>
+            <Award size={20} color="#fcd34d" />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>Puan</span>
+              <span style={{ fontWeight: 700, fontSize: '1rem' }}>{user?.stats?.score || 0}</span>
+            </div>
           </div>
         </div>
       </div>
