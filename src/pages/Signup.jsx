@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, User, BookOpen, GraduationCap, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, BookOpen, GraduationCap, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { classes } from '../data/mockData';
 
 const Signup = () => {
@@ -15,6 +15,9 @@ const Signup = () => {
   
   const [verificationCode, setVerificationCode] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
+
+  const [adminVerificationCode, setAdminVerificationCode] = useState('');
+  const [generatedAdminCode, setGeneratedAdminCode] = useState('');
   
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -28,31 +31,29 @@ const Signup = () => {
       return;
     }
 
-    // Generate a random 6-digit code
+    // Generate a random 6-digit code for personal email
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedCode(code);
     
     // Simulate sending an email
-    alert(`E-posta doğrulama kodunuz: ${code}\n\n(Bu mesaj, test ortamında olduğumuz için e-posta yerine gösterilmektedir.)`);
+    alert(`Kişisel e-posta doğrulama kodunuz (${email}): ${code}\n\n(Bu mesaj, test ortamında olduğumuz için e-posta yerine gösterilmektedir.)`);
     
     setStep(2);
   };
 
   const handleResendCode = () => {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedCode(code);
-    alert(`YENİ E-posta doğrulama kodunuz: ${code}\n\n(Bu mesaj, test ortamında olduğumuz için e-posta yerine gösterilmektedir.)`);
+    if (step === 2) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedCode(code);
+      alert(`YENİ Kişisel e-posta doğrulama kodunuz: ${code}`);
+    } else if (step === 3) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedAdminCode(code);
+      alert(`YENİ Akademi onay kodunuz (epusula.akademi@gmail.com): ${code}`);
+    }
   };
 
-  const handleVerify = (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (verificationCode !== generatedCode) {
-      setError('Hatalı doğrulama kodu. Lütfen tekrar deneyin.');
-      return;
-    }
-
+  const completeRegistration = () => {
     const userData = { name, email, password, role };
     if (role === 'student') {
       userData.classId = classId;
@@ -69,6 +70,38 @@ const Signup = () => {
     }
   };
 
+  const handleVerify = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (verificationCode !== generatedCode) {
+      setError('Hatalı doğrulama kodu. Lütfen tekrar deneyin.');
+      return;
+    }
+
+    if (role === 'admin') {
+      // Step 2 pass, but Admin needs Step 3 (Academy approval)
+      const adminCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedAdminCode(adminCode);
+      alert(`Akademi Onay Kodu (epusula.akademi@gmail.com adresine gönderildi): ${adminCode}\n\n(Bu kodun admin yetkisi için akademi tarafından onaylanması gerekmektedir.)`);
+      setStep(3);
+    } else {
+      completeRegistration();
+    }
+  };
+
+  const handleAdminVerify = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (adminVerificationCode !== generatedAdminCode) {
+      setError('Hatalı akademi onay kodu. Lütfen akademi ile iletişime geçin.');
+      return;
+    }
+
+    completeRegistration();
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -82,10 +115,14 @@ const Signup = () => {
       <div className="card glass" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 className="text-gradient" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-            {step === 1 ? 'Kayıt Ol' : 'Hesabı Doğrula'}
+            {step === 1 ? 'Kayıt Ol' : step === 2 ? 'E-postayı Doğrula' : 'Akademi Onayı'}
           </h1>
           <p style={{ color: 'var(--color-black-light)', fontSize: '0.95rem' }}>
-            {step === 1 ? 'Epusula platformuna katılın' : `${email} adresine gönderilen kodu girin`}
+            {step === 1 
+              ? 'Epusula platformuna katılın' 
+              : step === 2 
+                ? `${email} adresine gönderilen kodu girin`
+                : 'epusula.akademi@gmail.com adresine gönderilen yetki kodunu girin'}
           </p>
         </div>
 
@@ -103,7 +140,7 @@ const Signup = () => {
           </div>
         )}
 
-        {step === 1 ? (
+        {step === 1 && (
           <form onSubmit={handleInitialSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label htmlFor="name" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-black-light)' }}>
@@ -269,11 +306,13 @@ const Signup = () => {
               İleri
             </button>
           </form>
-        ) : (
+        )}
+
+        {step === 2 && (
           <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label htmlFor="verificationCode" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-black-light)' }}>
-                Doğrulama Kodu
+                Kişisel Doğrulama Kodu
               </label>
               <div style={{ position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--color-gray)' }}>
@@ -307,16 +346,7 @@ const Signup = () => {
                 <button 
                   type="button" 
                   onClick={handleResendCode}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: 'var(--color-blue)', 
-                    fontSize: '0.85rem', 
-                    fontWeight: 600, 
-                    cursor: 'pointer', 
-                    padding: 0,
-                    textDecoration: 'underline'
-                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-blue)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                 >
                   Kodu Tekrar Gönder
                 </button>
@@ -324,17 +354,65 @@ const Signup = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button 
-                type="button" 
-                onClick={() => setStep(1)} 
-                className="btn btn-outline" 
-                style={{ flex: 1, padding: '0.85rem' }}
-              >
-                Geri Dön
-              </button>
+              <button type="button" onClick={() => setStep(1)} className="btn btn-outline" style={{ flex: 1, padding: '0.85rem' }}>Geri Dön</button>
               <button type="submit" className="btn btn-accent" style={{ flex: 1, padding: '0.85rem' }}>
-                Doğrula ve Kayıt Ol
+                {role === 'admin' ? 'İleri' : 'Doğrula ve Kayıt Ol'}
               </button>
+            </div>
+          </form>
+        )}
+
+        {step === 3 && (
+          <form onSubmit={handleAdminVerify} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="adminVerificationCode" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-black-light)' }}>
+                Akademi Onay Kodu
+              </label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--color-gray)' }}>
+                  <ShieldAlert size={18} />
+                </div>
+                <input 
+                  id="adminVerificationCode"
+                  type="text" 
+                  value={adminVerificationCode}
+                  onChange={(e) => setAdminVerificationCode(e.target.value)}
+                  placeholder="Akademi yetki kodu"
+                  maxLength={6}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem 0.75rem 2.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-gray)',
+                    fontFamily: 'var(--font-family)',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    letterSpacing: '0.2em',
+                    textAlign: 'center'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = 'var(--color-purple)'}
+                  onBlur={(e) => e.target.style.borderColor = 'var(--color-gray)'}
+                />
+              </div>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-black-light)', textAlign: 'center' }}>
+                Bu kod <b>epusula.akademi@gmail.com</b> adresine gönderilmiştir.
+              </p>
+              
+              <div style={{ textAlign: 'right' }}>
+                <button 
+                  type="button" 
+                  onClick={handleResendCode}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-blue)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                >
+                  Akademi Kodunu Tekrar Gönder
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button type="button" onClick={() => setStep(2)} className="btn btn-outline" style={{ flex: 1, padding: '0.85rem' }}>Geri Dön</button>
+              <button type="submit" className="btn btn-accent" style={{ flex: 1, padding: '0.85rem' }}>Onayla ve Kayıt Ol</button>
             </div>
           </form>
         )}
