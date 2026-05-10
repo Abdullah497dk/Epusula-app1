@@ -274,9 +274,44 @@ const Layout = ({ children }) => {
           )}
           {/* Header Title could be dynamics */}
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: 'var(--color-black)' }}>
-            Hoş Geldin, {user?.name.split(' ')[0]}
+            Hoş Geldin, {user?.name?.split(' ')[0]}
           </h2>
         </header>
+
+        {/* End of Day Streak Reminder Notification */}
+        {(() => {
+          if (user?.role !== 'student') return null;
+          if (!user.stats || (user.stats.streak || 0) === 0) return null;
+          
+          const todayDate = new Date().toISOString().split('T')[0];
+          const hasCompletedToday = user.stats.lastTestDate === todayDate;
+          if (hasCompletedToday) return null;
+
+          const currentHour = new Date().getHours();
+          // Gün bitimine yaklaşıldıysa (Örn: Akşam 19:00'dan sonra)
+          if (currentHour >= 19) {
+            return (
+              <div style={{
+                backgroundColor: '#ef4444',
+                color: 'white',
+                padding: '1rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                animation: 'slideDown 0.5s ease'
+              }}>
+                <div style={{ flexShrink: 0 }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Serin Tehlikede! 🔥</h4>
+                  <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>Gün bitmek üzere ve bugünkü testini henüz çözmedin. {user.stats.streak} günlük serini kaybetmemek için hemen günün görevini tamamla!</p>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Page Content */}
         <main style={{ padding: '1.5rem', flex: 1, overflowX: 'hidden' }}>
