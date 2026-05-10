@@ -85,13 +85,13 @@ const StudentDashboard = () => {
       const newTotalAnswered = (user.stats?.totalAnswered || 0) + questions.length;
       const newCorrectAnswers = (user.stats?.correctAnswers || 0) + currentScore;
 
-      // Add activity log
-      addActivity(user.id, {
+      const newActivity = {
         type: 'test_completed',
         count: currentScore,
         total: questions.length,
         date: now
-      });
+      };
+      const newActivityLog = [newActivity, ...(user.activityLog || [])].slice(0, 50);
 
       updateProfile({
         stats: {
@@ -103,7 +103,8 @@ const StudentDashboard = () => {
           lastTestDate: todayDate,
           todaysAnswers: answers,
           todaysCorrectCount: currentScore
-        }
+        },
+        activityLog: newActivityLog
       });
     }
   };
