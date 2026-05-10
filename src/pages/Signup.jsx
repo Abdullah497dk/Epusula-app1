@@ -38,6 +38,12 @@ const Signup = () => {
     setStep(2);
   };
 
+  const handleResendCode = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedCode(code);
+    alert(`YENİ E-posta doğrulama kodunuz: ${code}\n\n(Bu mesaj, test ortamında olduğumuz için e-posta yerine gösterilmektedir.)`);
+  };
+
   const handleVerify = (e) => {
     e.preventDefault();
     setError('');
@@ -295,6 +301,25 @@ const Signup = () => {
                   onFocus={(e) => e.target.style.borderColor = 'var(--color-purple)'}
                   onBlur={(e) => e.target.style.borderColor = 'var(--color-gray)'}
                 />
+              </div>
+              
+              <div style={{ textAlign: 'right' }}>
+                <button 
+                  type="button" 
+                  onClick={handleResendCode}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: 'var(--color-blue)', 
+                    fontSize: '0.85rem', 
+                    fontWeight: 600, 
+                    cursor: 'pointer', 
+                    padding: 0,
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Kodu Tekrar Gönder
+                </button>
               </div>
             </div>
 
