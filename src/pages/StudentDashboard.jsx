@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { dailyQuestions, units } from '../data/mockData';
-import { allQuestions } from '../data/questionsData';
+import { getDailyQuestions, getUnitName, computeRank } from '../data/dataService';
 import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronRight, X, Send, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const StudentDashboard = () => {
-  const { user, updateProfile, addActivity } = useAuth();
+  const { user, updateProfile, allUsers } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -27,31 +26,8 @@ const StudentDashboard = () => {
       }
     }
     
-    // Get all questions for this user's class
-    const allClassQs = [...dailyQuestions, ...allQuestions].filter(q => q.classId === user.classId);
-    
-    // Determine the "Day Index" globally based on a fixed start date
-    // Let's use '2026-05-01' as the start date
-    const startDate = new Date('2026-05-01T00:00:00Z');
-    const now = new Date();
-    // Start of current day
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const daysPassed = Math.floor((startOfToday - startDate) / (1000 * 60 * 60 * 24));
-    
-    // Ensure we don't get negative days
-    const safeDaysPassed = Math.max(0, daysPassed);
-    
-    // 3 questions per day
-    const startIndex = (safeDaysPassed * 3) % Math.max(1, allClassQs.length);
-    
-    let todaysQs = allClassQs.slice(startIndex, startIndex + 3);
-    
-    // If wrapping around at the end
-    if (todaysQs.length < 3 && allClassQs.length >= 3) {
-      todaysQs = [...todaysQs, ...allClassQs.slice(0, 3 - todaysQs.length)];
-    }
-
-    setQuestions(todaysQs);
+    // Bu sınıf için günün sorularını veri katmanından al (tarihe göre rotasyon).
+    setQuestions(getDailyQuestions(user.classId));
   }, [user]);
 
   const handleOptionSelect = (qId, option) => {
@@ -136,9 +112,8 @@ const StudentDashboard = () => {
     }
   };
 
-  const getUnitName = (unitId) => {
-    return units.find(u => u.id === unitId)?.name || 'Bilinmeyen Ünite';
-  };
+  const noQuestions = questions.length === 0;
+  const liveRank = computeRank(allUsers, user?.id);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -186,7 +161,7 @@ const StudentDashboard = () => {
             <Trophy size={20} color="#fcd34d" />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>Sıralama</span>
-              <span style={{ fontWeight: 700, fontSize: '1rem' }}>{user?.stats?.rank || '-'}.</span>
+              <span style={{ fontWeight: 700, fontSize: '1rem' }}>{liveRank || '-'}.</span>
             </div>
           </Link>
 
@@ -229,27 +204,35 @@ const StudentDashboard = () => {
             </div>
             <div>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--color-black)' }}>
-                {alreadyCompletedToday ? "Bugünkü Görevini Tamamladın!" : "Günün Soruları Hazır!"}
+                {noQuestions
+                  ? "Henüz Soru Eklenmemiş"
+                  : alreadyCompletedToday ? "Bugünkü Görevini Tamamladın!" : "Günün Soruları Hazır!"}
               </h3>
               <p style={{ color: 'var(--color-black-light)', maxWidth: '400px', margin: '0 auto', fontSize: '1rem' }}>
-                {alreadyCompletedToday ? "Cevaplarını ve doğru çözümleri inceleyebilirsin." : "Bugün senin için hazırlanan 3 soruyu çözmeye hazır mısın? Başarılar dileriz!"}
+                {noQuestions
+                  ? "Bu sınıf için henüz soru bulunmuyor. Lütfen daha sonra tekrar dene."
+                  : alreadyCompletedToday ? "Cevaplarını ve doğru çözümleri inceleyebilirsin." : "Bugün senin için hazırlanan 3 soruyu çözmeye hazır mısın? Başarılar dileriz!"}
               </p>
             </div>
-            <button 
-              className="btn btn-accent" 
+            <button
+              className="btn btn-accent"
+              disabled={noQuestions}
               onClick={() => {
+                if (noQuestions) return;
                 setIsStarted(true);
                 setCurrentQuestionIndex(0);
                 if (!alreadyCompletedToday) {
                   setAnswers({});
                   setSubmitted(false);
                 }
-              }} 
-              style={{ 
-                padding: '1rem 2.5rem', 
-                fontSize: '1.1rem', 
+              }}
+              style={{
+                padding: '1rem 2.5rem',
+                fontSize: '1.1rem',
                 borderRadius: 'var(--radius-md)',
-                boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.39)'
+                boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.39)',
+                opacity: noQuestions ? 0.5 : 1,
+                cursor: noQuestions ? 'not-allowed' : 'pointer'
               }}
             >
               {alreadyCompletedToday ? "Çözümleri İncele" : "Günün Görevine Başla"}
