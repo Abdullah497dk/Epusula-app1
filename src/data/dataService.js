@@ -1,7 +1,4 @@
-// Veri erişim katmanı (Data Access Layer).
-// UI bileşenleri veriyi doğrudan mockData/questions'tan değil, buradan okur.
-// Supabase aşamasında bu dosyanın içi Supabase çağrılarına çevrilir; imzalar aynı kalır.
-import { QUESTIONS_BY_CLASS } from './questions/index.js';
+import { supabase } from '../supabaseClient';
 import { classes, units } from './mockData';
 
 // Günlük rotasyonun başlangıç tarihi (sabit referans noktası).
@@ -22,12 +19,20 @@ const daysSinceStart = (date) => {
 
 /**
  * Bir sınıf için belirli bir günün sorularını döndürür (varsayılan: bugün).
- * Havuz boşsa boş dizi döner. Aynı gün içinde tekrar etmez; havuz 3'ün katı
- * olduğunda günler arası da çakışma olmaz.
+ * Supabase questions tablosundan class_id değerine göre çeker.
  */
-export const getDailyQuestions = (classId, date = new Date()) => {
-  const pool = QUESTIONS_BY_CLASS[classId] || [];
-  if (pool.length === 0) return [];
+export const getDailyQuestions = async (classId, date = new Date()) => {
+  if (!classId) return [];
+  
+  const { data: pool, error } = await supabase
+    .from('questions')
+    .select('*')
+    .eq('class_id', classId);
+
+  if (error || !pool || pool.length === 0) {
+    console.error('Soru havuzu yüklenemedi:', error);
+    return [];
+  }
 
   const daysPassed = daysSinceStart(date);
   const startIndex = (daysPassed * QUESTIONS_PER_DAY) % pool.length;
@@ -35,7 +40,16 @@ export const getDailyQuestions = (classId, date = new Date()) => {
 
   const result = [];
   for (let i = 0; i < count; i++) {
-    result.push(pool[(startIndex + i) % pool.length]);
+    const rawQ = pool[(startIndex + i) % pool.length];
+    result.push({
+      id: rawQ.id,
+      classId: rawQ.class_id,
+      unitId: rawQ.unit_id,
+      text: rawQ.text,
+      options: rawQ.options,
+      correctAnswer: rawQ.correct_answer,
+      difficulty: rawQ.difficulty
+    });
   }
   return result;
 };
