@@ -5,7 +5,7 @@ import { CheckCircle2, Circle, XCircle, Award, PlayCircle, ChevronLeft, ChevronR
 import { Link } from 'react-router-dom';
 
 const StudentDashboard = () => {
-  const { user, updateProfile, allUsers } = useAuth();
+  const { user, updateProfile, allUsers, addActivity } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -16,18 +16,23 @@ const StudentDashboard = () => {
   const [earnedPoints, setEarnedPoints] = useState(0);
 
   useEffect(() => {
-    const todayDate = new Date().toISOString().split('T')[0];
-    if (user?.stats?.lastTestDate === todayDate) {
-      setAlreadyCompletedToday(true);
-      if (user.stats.todaysAnswers) {
-        setAnswers(user.stats.todaysAnswers);
-        setScore(user.stats.todaysCorrectCount || 0);
-        setSubmitted(true);
+    const loadData = async () => {
+      const todayDate = new Date().toISOString().split('T')[0];
+      if (user?.stats?.lastTestDate === todayDate) {
+        setAlreadyCompletedToday(true);
+        if (user.stats.todaysAnswers) {
+          setAnswers(user.stats.todaysAnswers);
+          setScore(user.stats.todaysCorrectCount || 0);
+          setSubmitted(true);
+        }
       }
-    }
-    
-    // Bu sınıf için günün sorularını veri katmanından al (tarihe göre rotasyon).
-    setQuestions(getDailyQuestions(user.classId));
+      
+      if (user?.classId) {
+        const dailyQs = await getDailyQuestions(user.classId);
+        setQuestions(dailyQs);
+      }
+    };
+    loadData();
   }, [user]);
 
   const handleOptionSelect = (qId, option) => {
@@ -83,32 +88,33 @@ const StudentDashboard = () => {
       const newTotalAnswered = (user.stats?.totalAnswered || 0) + questions.length;
       const newCorrectAnswers = (user.stats?.correctAnswers || 0) + currentScore;
 
-      const newActivity = {
-        type: 'test_completed',
-        count: currentScore,
-        total: questions.length,
-        date: now,
-        details: questions.map(q => ({
-          id: q.id,
-          unitId: q.unitId,
-          isCorrect: answers[q.id] === q.correctAnswer
-        }))
-      };
-      const newActivityLog = [newActivity, ...(user.activityLog || [])].slice(0, 50);
+      const saveResults = async () => {
+        await updateProfile({
+          stats: {
+            ...user.stats,
+            score: newTotalScore,
+            streak: newStreak,
+            totalAnswered: newTotalAnswered,
+            correctAnswers: newCorrectAnswers,
+            lastTestDate: todayDate,
+            todaysAnswers: answers,
+            todaysCorrectCount: currentScore
+          }
+        });
 
-      updateProfile({
-        stats: {
-          ...user.stats,
-          score: newTotalScore,
-          streak: newStreak,
-          totalAnswered: newTotalAnswered,
-          correctAnswers: newCorrectAnswers,
-          lastTestDate: todayDate,
-          todaysAnswers: answers,
-          todaysCorrectCount: currentScore
-        },
-        activityLog: newActivityLog
-      });
+        await addActivity(user.id, {
+          type: 'test_completed',
+          count: currentScore,
+          total: questions.length,
+          date: now,
+          details: questions.map(q => ({
+            id: q.id,
+            unitId: q.unitId,
+            isCorrect: answers[q.id] === q.correctAnswer
+          }))
+        });
+      };
+      saveResults();
     }
   };
 

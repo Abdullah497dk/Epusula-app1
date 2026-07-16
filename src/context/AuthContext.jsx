@@ -29,29 +29,27 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // 1. Fetch current profile
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', activeId).single();
-    if (profile) {
-      // Fetch activity logs and details
-      const { data: activities } = await supabase.from('activities')
-        .select(`
-          id,
-          type,
-          count,
-          total,
-          date,
-          answers (
-            question_id,
-            unit_id,
-            is_correct
-          )
-        `)
-        .eq('user_id', activeId)
-        .order('date', { ascending: false })
-        .limit(50);
+    // Fetch all activities and answers once to avoid N+1 queries
+    const { data: allActs } = await supabase.from('activities')
+      .select(`
+        id,
+        user_id,
+        type,
+        count,
+        total,
+        date,
+        answers (
+          question_id,
+          unit_id,
+          is_correct
+        )
+      `)
+      .order('date', { ascending: false });
 
-      // Reconstruct activityLog format to match original frontend shape
-      const activityLog = (activities || []).map(act => {
+    // Helper to extract activityLog for a user
+    const getUserActivityLog = (userId) => {
+      const userActs = (allActs || []).filter(act => act.user_id === userId).slice(0, 50);
+      return userActs.map(act => {
         if (act.type === 'test_completed') {
           return {
             type: 'test_completed',
@@ -70,6 +68,12 @@ export const AuthProvider = ({ children }) => {
           date: act.date
         };
       });
+    };
+
+    // 1. Fetch current profile
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', activeId).single();
+    if (profile) {
+      const activityLog = getUserActivityLog(activeId);
 
       // Streak Reset Logic: Gün sonu kontrolü
       let streakVal = profile.streak;
@@ -131,7 +135,8 @@ export const AuthProvider = ({ children }) => {
           lastTestDate: p.last_test_date,
           todaysAnswers: p.todays_answers || {},
           todaysCorrectCount: p.todays_correct_count
-        }
+        },
+        activityLog: getUserActivityLog(p.id)
       }));
       setAllUsers(mappedProfiles);
     }

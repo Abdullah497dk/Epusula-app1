@@ -15,7 +15,7 @@ const Profile = () => {
   
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
@@ -24,7 +24,7 @@ const Profile = () => {
       return;
     }
 
-    const result = updateProfile({ name, email, bio, phone, profilePic });
+    const result = await updateProfile({ name, email, bio, phone, profilePic });
     if (result.success) {
       setMessage({ text: 'Profiliniz başarıyla güncellendi.', type: 'success' });
     } else {

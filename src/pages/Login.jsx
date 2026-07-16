@@ -7,11 +7,12 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -20,15 +21,16 @@ const Login = () => {
       return;
     }
 
-    const result = login(email, password);
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
     
     if (result.success) {
-      // route based on role
       if (result.role === 'student') navigate('/student/dashboard');
       else if (result.role === 'teacher') navigate('/teacher/dashboard');
       else if (result.role === 'admin') navigate('/admin/dashboard');
     } else {
-      setError(result.error);
+      setError(result.error || 'Giriş yapılamadı.');
     }
   };
 
@@ -128,8 +130,13 @@ const Login = () => {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem' }}>
-            Giriş Yap
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem' }}
+            disabled={loading}
+          >
+            {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
           </button>
         </form>
 
@@ -143,7 +150,7 @@ const Login = () => {
         <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-black-light)' }}>
           <p>Test Hesapları:</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-            <span style={{ cursor: 'pointer', color: 'var(--color-blue)' }} onClick={() => {setEmail('ahmet@epusula.net'); setPassword('123');}}>Öğrenci</span>
+            <span style={{ cursor: 'pointer', color: 'var(--color-blue)' }} onClick={() => {setEmail('ahmetadil@epusula.net'); setPassword('123');}}>Öğrenci</span>
             <span>|</span>
             <span style={{ cursor: 'pointer', color: 'var(--color-blue)' }} onClick={() => {setEmail('ayse@epusula.net'); setPassword('123');}}>Öğretmen</span>
             <span>|</span>

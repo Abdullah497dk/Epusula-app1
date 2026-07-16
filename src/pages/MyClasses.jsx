@@ -37,7 +37,7 @@ const MyClasses = () => {
   const myJoinedClasses = customClasses.filter(c => c.studentIds.includes(user?.id));
   const myPendingRequests = joinRequests.filter(r => r.studentId === user?.id && r.status === 'pending');
 
-  const handleCreateClass = (e) => {
+  const handleCreateClass = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -45,26 +45,34 @@ const MyClasses = () => {
       setError('Sınıf adı boş olamaz.');
       return;
     }
-    const res = createCustomClass(newClassName);
+    const res = await createCustomClass(newClassName);
     if (res.success) {
-      setSuccess(`"${newClassName}" sınıfı oluşturuldu. Sınıf Kodu: ${res.class.id}`);
+      setSuccess(`"${newClassName}" sınıfı oluşturuldu.`);
       setNewClassName('');
     } else {
       setError(res.error);
     }
   };
 
-  const handleUpdateClassName = (classId) => {
+  const handleUpdateClassName = async (classId) => {
     if (!tempClassName.trim()) return;
-    updateClassName(classId, tempClassName);
-    setEditingClassId(null);
-    setSuccess('Sınıf adı güncellendi.');
+    const res = await updateClassName(classId, tempClassName);
+    if (res.success) {
+      setEditingClassId(null);
+      setSuccess('Sınıf adı güncellendi.');
+    } else {
+      setError(res.error);
+    }
   };
 
-  const handleRemoveStudent = (classId, studentId) => {
+  const handleRemoveStudent = async (classId, studentId) => {
     if (window.confirm(`${getStudentName(studentId)} adlı öğrenciyi sınıftan çıkarmak istediğinize emin misiniz?`)) {
-      removeStudentFromClass(classId, studentId);
-      setSuccess('Öğrenci sınıftan çıkarıldı.');
+      const res = await removeStudentFromClass(classId, studentId);
+      if (res.success) {
+        setSuccess('Öğrenci sınıftan çıkarıldı.');
+      } else {
+        setError(res.error);
+      }
     }
   };
 
@@ -124,10 +132,10 @@ const MyClasses = () => {
     }
   };
 
-  const handleRequestJoin = (classId) => {
+  const handleRequestJoin = async (classId) => {
     setError('');
     setSuccess('');
-    const res = requestJoinClass(classId);
+    const res = await requestJoinClass(classId);
     if (res.success) {
       setSuccess('Katılma isteği gönderildi. Öğretmenin onayı bekleniyor.');
       setSearchResult(null);
