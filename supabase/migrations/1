@@ -1,0 +1,166 @@
+-- Önceki tablolar varsa temizleyelim (Sıfırdan kurmak için)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user CASCADE;
+DROP TABLE IF EXISTS public.answers CASCADE;
+DROP TABLE IF EXISTS public.activities CASCADE;
+DROP TABLE IF EXISTS public.join_requests CASCADE;
+DROP TABLE IF EXISTS public.class_members CASCADE;
+DROP TABLE IF EXISTS public.custom_classes CASCADE;
+DROP TABLE IF EXISTS public.questions CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- 1. PROFILES TABLE
+CREATE TABLE public.profiles (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL CHECK (role IN ('student', 'teacher', 'admin')),
+    class_id TEXT,
+    student_no TEXT,
+    bio TEXT,
+    phone TEXT,
+    profile_pic TEXT,
+    streak INTEGER DEFAULT 0,
+    total_answered INTEGER DEFAULT 0,
+    correct_answers INTEGER DEFAULT 0,
+    score INTEGER DEFAULT 0,
+    last_test_date DATE,
+    todays_answers JSONB DEFAULT '{}'::jsonb,
+    todays_correct_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 2. QUESTIONS TABLE
+CREATE TABLE public.questions (
+    id TEXT PRIMARY KEY,
+    class_id TEXT NOT NULL,
+    unit_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    options TEXT[] NOT NULL,
+    correct_answer TEXT NOT NULL,
+    difficulty TEXT DEFAULT 'Orta'
+);
+
+-- 3. CUSTOM CLASSES TABLE
+CREATE TABLE public.custom_classes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 4. CLASS MEMBERS TABLE
+CREATE TABLE public.class_members (
+    class_id TEXT REFERENCES public.custom_classes(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    PRIMARY KEY (class_id, student_id)
+);
+
+-- 5. JOIN REQUESTS TABLE
+CREATE TABLE public.join_requests (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    class_id TEXT REFERENCES public.custom_classes(id) ON DELETE CASCADE NOT NULL,
+    student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    UNIQUE(class_id, student_id)
+);
+
+-- 6. ACTIVITIES TABLE
+CREATE TABLE public.activities (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('login', 'test_completed')),
+    count INTEGER,
+    total INTEGER,
+    date TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 7. ANSWERS TABLE
+CREATE TABLE public.answers (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    activity_id UUID REFERENCES public.activities(id) ON DELETE CASCADE NOT NULL,
+    question_id TEXT REFERENCES public.questions(id) ON DELETE CASCADE,
+    unit_id TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL
+);
+
+-- 8. AUTO-PROFILE CREATION TRIGGER
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    user_role TEXT;
+    user_name TEXT;
+    user_class_id TEXT;
+    user_student_no TEXT;
+BEGIN
+    user_role := COALESCE(new.raw_user_meta_data->>'role', 'student');
+    user_name := COALESCE(new.raw_user_meta_data->>'name', 'İsimsiz Kullanıcı');
+    user_class_id := new.raw_user_meta_data->>'classId';
+    
+    IF user_role = 'student' THEN
+        user_student_no := FLOOR(100000 + RANDOM() * 900000)::TEXT;
+    ELSE
+        user_student_no := NULL;
+    END IF;
+
+    INSERT INTO public.profiles (id, name, email, role, class_id, student_no)
+    VALUES (
+        new.id,
+        user_name,
+        new.email,
+        user_role,
+        user_class_id,
+        user_student_no
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 9. ROW LEVEL SECURITY (RLS) POLICIES
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.class_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.join_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.answers ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Profiles are viewable by authenticated users" ON public.profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
+
+CREATE POLICY "Questions are viewable by authenticated users" ON public.questions FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Classes are viewable by authenticated users" ON public.custom_classes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Teachers can insert classes" ON public.custom_classes FOR INSERT TO authenticated WITH CHECK (auth.uid() = teacher_id);
+CREATE POLICY "Teachers can update/delete their own classes" ON public.custom_classes FOR ALL TO authenticated USING (auth.uid() = teacher_id);
+
+CREATE POLICY "Class members are viewable by class teacher/students" ON public.class_members FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Teachers can add members" ON public.class_members FOR INSERT TO authenticated WITH CHECK (
+    EXISTS (SELECT 1 FROM public.custom_classes WHERE id = class_id AND teacher_id = auth.uid())
+);
+CREATE POLICY "Teachers can remove members" ON public.class_members FOR DELETE TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.custom_classes WHERE id = class_id AND teacher_id = auth.uid())
+);
+
+CREATE POLICY "Requests are viewable by target teacher and applicant student" ON public.join_requests FOR SELECT TO authenticated USING (
+    auth.uid() = student_id OR EXISTS (SELECT 1 FROM public.custom_classes WHERE id = class_id AND teacher_id = auth.uid())
+);
+CREATE POLICY "Students can create requests" ON public.join_requests FOR INSERT TO authenticated WITH CHECK (auth.uid() = student_id);
+CREATE POLICY "Involved parties can delete/update requests" ON public.join_requests FOR ALL TO authenticated USING (
+    auth.uid() = student_id OR EXISTS (SELECT 1 FROM public.custom_classes WHERE id = class_id AND teacher_id = auth.uid())
+);
+
+CREATE POLICY "Activities are viewable by authenticated users" ON public.activities FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can insert their own activities" ON public.activities FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Answers are viewable by authenticated users" ON public.answers FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can insert their own answers" ON public.answers FOR INSERT TO authenticated WITH CHECK (
+    EXISTS (SELECT 1 FROM public.activities WHERE id = activity_id AND user_id = auth.uid())
+);
