@@ -221,6 +221,19 @@ export const AuthProvider = ({ children }) => {
     return { success: true, role: profile?.role };
   };
 
+  const loginWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  };
+
   const register = async (userData) => {
     const { email, password, name, role, classId } = userData;
     const { data, error } = await supabase.auth.signUp({
@@ -385,6 +398,7 @@ export const AuthProvider = ({ children }) => {
     requestJoinClass,
     handleJoinRequest,
     addActivity,
+    loginWithGoogle,
     updateClassName,
     removeStudentFromClass
   };
