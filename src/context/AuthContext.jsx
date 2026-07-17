@@ -274,6 +274,12 @@ export const AuthProvider = ({ children }) => {
     if (updatedData.phone !== undefined) updateObj.phone = updatedData.phone;
     if (updatedData.profilePic !== undefined) updateObj.profile_pic = updatedData.profilePic;
     if (updatedData.classId !== undefined) updateObj.class_id = updatedData.classId;
+    if (updatedData.role !== undefined) {
+      updateObj.role = updatedData.role;
+      if (updatedData.role === 'student' && !user.studentNo) {
+        updateObj.student_no = Math.floor(100000 + Math.random() * 900000).toString();
+      }
+    }
 
     if (updatedData.stats) {
       const s = updatedData.stats;

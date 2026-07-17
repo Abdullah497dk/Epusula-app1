@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, User, BookOpen, GraduationCap } from 'lucide-react';
@@ -11,10 +11,18 @@ const Signup = () => {
   const [role, setRole] = useState('student');
   const [classId, setClassId] = useState('class-6'); // Default to class-6
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
-  const { register, loginWithGoogle } = useAuth();
+  const { user, loading: authLoading, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'student') navigate('/student/dashboard');
+      else if (user.role === 'teacher') navigate('/teacher/dashboard');
+      else if (user.role === 'admin') navigate('/admin/dashboard');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleInitialSubmit = async (e) => {
     e.preventDefault();
@@ -25,14 +33,14 @@ const Signup = () => {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     const userData = { name, email, password, role };
     if (role === 'student') {
       userData.classId = classId;
     }
 
     const result = await register(userData);
-    setLoading(false);
+    setSubmitting(false);
     
     if (result.success) {
       if (role === 'student') navigate('/student/dashboard');
@@ -50,6 +58,33 @@ const Signup = () => {
       setError(res.error);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-white-off)'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          border: '3px solid var(--color-purple-light)',
+          borderTopColor: 'var(--color-purple)',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
 
   return (
     <div style={{
@@ -250,9 +285,9 @@ const Signup = () => {
             type="submit" 
             className="btn btn-primary" 
             style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem' }}
-            disabled={loading}
+            disabled={submitting}
           >
-            {loading ? 'Kayıt Yapılıyor...' : 'Kayıt Ol'}
+            {submitting ? 'Kayıt Yapılıyor...' : 'Kayıt Ol'}
           </button>
         </form>
 

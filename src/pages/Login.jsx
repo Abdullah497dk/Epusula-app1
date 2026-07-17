@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
@@ -7,10 +7,18 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
-  const { login, loginWithGoogle } = useAuth();
+  const { user, loading: authLoading, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'student') navigate('/student/dashboard');
+      else if (user.role === 'teacher') navigate('/teacher/dashboard');
+      else if (user.role === 'admin') navigate('/admin/dashboard');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,9 +29,9 @@ const Login = () => {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     const result = await login(email, password);
-    setLoading(false);
+    setSubmitting(false);
     
     if (result.success) {
       if (result.role === 'student') navigate('/student/dashboard');
@@ -41,6 +49,33 @@ const Login = () => {
       setError(res.error);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-white-off)'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          border: '3px solid var(--color-purple-light)',
+          borderTopColor: 'var(--color-purple)',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
 
   return (
     <div style={{
@@ -142,9 +177,9 @@ const Login = () => {
             type="submit" 
             className="btn btn-primary" 
             style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem' }}
-            disabled={loading}
+            disabled={submitting}
           >
-            {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
+            {submitting ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
           </button>
         </form>
 

@@ -13,6 +13,7 @@ import MyClasses from './pages/MyClasses';
 import StudentStats from './pages/StudentStats';
 import MyStats from './pages/MyStats';
 
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -31,12 +32,51 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return <Layout>{children}</Layout>;
 };
 
+// Root Route Component
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-white-off)'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          border: '3px solid var(--color-purple-light)',
+          borderTopColor: 'var(--color-purple)',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (user) {
+    if (user.role === 'student') return <Navigate to="/student/dashboard" replace />;
+    if (user.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
+    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <AuthProvider>
       <HashRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Menu, X, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import OnboardingModal from './OnboardingModal';
 
 const Layout = ({ children }) => {
   const { user, logout, joinRequests, customClasses } = useAuth();
@@ -360,6 +361,7 @@ const Layout = ({ children }) => {
           .nav-item { opacity: 1 !important; animation: none !important; }
         }
       `}</style>
+      {user && user.role === 'student' && !user.classId && <OnboardingModal />}
     </div>
   );
 };
