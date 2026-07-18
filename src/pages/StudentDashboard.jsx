@@ -274,23 +274,25 @@ const StudentDashboard = () => {
                   {currentQuestionIndex + 1} / {questions.length}
                 </span>
               </div>
-              <button 
-                onClick={() => setIsStarted(false)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem', 
-                  color: '#ef4444', 
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  padding: '0.5rem 1rem',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                }}
-              >
-                <X size={18} />
-                Sınavı Bitir
-              </button>
+              {!submitted && (
+                <button 
+                  onClick={() => setIsStarted(false)}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem', 
+                    color: '#ef4444', 
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    padding: '0.5rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                  }}
+                >
+                  <X size={18} />
+                  Sınavı Bitir
+                </button>
+              )}
             </header>
 
             {/* Exam Body */}
@@ -421,7 +423,28 @@ const StudentDashboard = () => {
                   Geri
                 </button>
 
-                {currentQuestionIndex < questions.length - 1 ? (
+                {submitted ? (
+                  <button 
+                    className="btn"
+                    onClick={() => setIsStarted(false)}
+                    style={{ 
+                      flex: 1,
+                      background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 4px 14px rgba(239,68,68,0.35)',
+                      borderRadius: 'var(--radius-md)',
+                      fontWeight: 700,
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <X size={18} />
+                    Sınavı Bitir
+                  </button>
+                ) : currentQuestionIndex < questions.length - 1 ? (
                   <button 
                     className="btn btn-primary"
                     onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
