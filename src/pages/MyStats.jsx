@@ -175,19 +175,6 @@ const ContributionGraph = ({ activityLog }) => {
         }
       });
     }
-    // Mock some data for demonstration if empty or sparse
-    // In a real app, this would be fetched from the backend
-    if (Object.keys(map).length < 5) {
-      const mockToday = new Date();
-      for (let i = 0; i < 40; i++) {
-        const d = new Date(mockToday);
-        d.setDate(d.getDate() - Math.floor(Math.random() * 60));
-        const dateStr = d.toISOString().split('T')[0];
-        if (!map[dateStr]) {
-          map[dateStr] = Math.floor(Math.random() * 4); // 0 to 3 questions
-        }
-      }
-    }
     return map;
   }, [activityLog]);
 
