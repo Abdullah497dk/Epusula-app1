@@ -24,33 +24,57 @@ const daysSinceStart = (date) => {
 export const getDailyQuestions = async (classId, date = new Date()) => {
   if (!classId) return [];
   
-  const { data: pool, error } = await supabase
+  // 1. Sadece soru ID'lerini sıralı şekilde çek (4000 soru olsa bile son derece hafiftir)
+  const { data: idsData, error: idsError } = await supabase
     .from('questions')
-    .select('*')
-    .eq('class_id', classId);
+    .select('id')
+    .eq('class_id', classId)
+    .order('id');
 
-  if (error || !pool || pool.length === 0) {
-    console.error('Soru havuzu yüklenemedi:', error);
+  if (idsError || !idsData || idsData.length === 0) {
+    console.error('Soru havuzu yüklenemedi:', idsError);
     return [];
   }
 
+  // 2. Bugünün indekslerini hesapla ve 3 soruyu belirle
   const daysPassed = daysSinceStart(date);
-  const startIndex = (daysPassed * QUESTIONS_PER_DAY) % pool.length;
-  const count = Math.min(QUESTIONS_PER_DAY, pool.length);
+  const totalQuestions = idsData.length;
+  const startIndex = (daysPassed * QUESTIONS_PER_DAY) % totalQuestions;
+  const count = Math.min(QUESTIONS_PER_DAY, totalQuestions);
 
-  const result = [];
+  const selectedIds = [];
   for (let i = 0; i < count; i++) {
-    const rawQ = pool[(startIndex + i) % pool.length];
-    result.push({
-      id: rawQ.id,
-      classId: rawQ.class_id,
-      unitId: rawQ.unit_id,
-      text: rawQ.text,
-      options: rawQ.options,
-      correctAnswer: rawQ.correct_answer,
-      difficulty: rawQ.difficulty
-    });
+    selectedIds.push(idsData[(startIndex + i) % totalQuestions].id);
   }
+
+  // 3. Sadece seçilen 3 sorunun detaylarını veritabanından çek
+  const { data: pool, error } = await supabase
+    .from('questions')
+    .select('*')
+    .in('id', selectedIds);
+
+  if (error || !pool || pool.length === 0) {
+    console.error('Seçilen sorular yüklenemedi:', error);
+    return [];
+  }
+
+  // 4. Soruları rotasyon sırasına göre sıralayıp formatla
+  const result = [];
+  selectedIds.forEach(id => {
+    const rawQ = pool.find(q => q.id === id);
+    if (rawQ) {
+      result.push({
+        id: rawQ.id,
+        classId: rawQ.class_id,
+        unitId: rawQ.unit_id,
+        text: rawQ.text,
+        options: rawQ.options,
+        correctAnswer: rawQ.correct_answer,
+        difficulty: rawQ.difficulty
+      });
+    }
+  });
+  
   return result;
 };
 

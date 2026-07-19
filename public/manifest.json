@@ -1,0 +1,24 @@
+{
+  "name": "Epusula - Günlük Matematik",
+  "short_name": "Epusula",
+  "description": "Her gün yeni matematik soruları çözün, serinizi koruyun ve puan kazanın.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#7026b9",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
