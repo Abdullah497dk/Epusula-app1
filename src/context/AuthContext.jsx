@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
+// Check if running inside a Capacitor native app shell
+const isNative = () => {
+  try {
+    return typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+};
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -196,8 +205,34 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
+    // Deep link listener for native app (handles epusula://login#access_token=... from Google OAuth)
+    let appListener = null;
+    if (isNative()) {
+      import('@capacitor/app').then(({ App }) => {
+        App.addListener('appUrlOpen', async ({ url }) => {
+          if (url && url.startsWith('epusula://login')) {
+            // Extract access token from the fragment
+            const urlHash = url.split('#')[1];
+            if (urlHash) {
+              const params = new URLSearchParams(urlHash);
+              const accessToken = params.get('access_token');
+              const refreshToken = params.get('refresh_token');
+              if (accessToken && refreshToken) {
+                await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+              }
+            }
+          }
+        }).then(listener => {
+          appListener = listener;
+        });
+      }).catch(err => {
+        console.warn('Capacitor App plugin not available:', err);
+      });
+    }
+
     return () => {
       subscription.unsubscribe();
+      if (appListener) appListener.remove();
     };
   }, []);
 
@@ -222,10 +257,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
+    // In native Capacitor app, redirect to custom deep-link scheme
+    // so the app can intercept the OAuth callback without a browser
+    const redirectTo = isNative()
+      ? 'epusula://login'
+      : window.location.origin;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo,
+        // Required for in-app browser flow on Android
+        skipBrowserRedirect: false
       }
     });
     if (error) {
