@@ -71,7 +71,7 @@ const Profile = () => {
       </h2>
       
       <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div className="profile-header-container" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <div style={{
               width: '100px',

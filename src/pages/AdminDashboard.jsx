@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { classes, units } from '../data/mockData';
 import { 
   PlusCircle, Search, Settings, BookOpen, Trash2, Edit2, 
-  ChevronLeft, ChevronRight, X, Loader, AlertCircle, Save, HelpCircle 
+  ChevronLeft, ChevronRight, X, Loader, AlertCircle, Save, HelpCircle, Upload, AlertTriangle 
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -33,6 +33,14 @@ const AdminDashboard = () => {
     optionD: '',
     correctOption: 'A'
   });
+
+  // CSV Import State
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [csvQuestions, setCsvQuestions] = useState([]);
+  const [csvErrors, setCsvErrors] = useState([]);
+  const [uploadingCsv, setUploadingCsv] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const csvInputRef = useRef(null);
   
   // Stats
   const [stats, setStats] = useState({
@@ -109,7 +117,7 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
-  // Trigger search on debounce or button click
+  // Trigger search on button click
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setCurrentPage(1);
@@ -230,7 +238,7 @@ const AdminDashboard = () => {
         if (updateErr) throw updateErr;
         alert('Soru başarıyla güncellendi.');
       } else {
-        // Create - generate a unique simple ID prefixing class and random hash
+        // Create
         const randomId = `q-${formData.classId}-${Math.random().toString(36).substring(2, 9)}`;
         const { error: insertErr } = await supabase
           .from('questions')
@@ -248,6 +256,146 @@ const AdminDashboard = () => {
       fetchStats();
     } catch (err) {
       alert('Soru kaydedilirken hata oluştu: ' + err.message);
+    }
+  };
+
+  // CSV Import Parser & Handler
+  const handleCsvFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/);
+      if (lines.length === 0) {
+        setCsvErrors(['Dosya boş.']);
+        return;
+      }
+
+      // Delimiter detection (semicolon for Turkish Excel standard, comma for general)
+      const headerLine = lines[0];
+      const delimiter = headerLine.includes(';') ? ';' : ',';
+
+      const questionsParsed = [];
+      const errors = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Custom parser to support values containing commas/semicolons inside double quotes
+        const row = [];
+        let insideQuotes = false;
+        let entry = '';
+
+        for (let charIdx = 0; charIdx < line.length; charIdx++) {
+          const char = line[charIdx];
+          if (char === '"') {
+            insideQuotes = !insideQuotes;
+          } else if (char === delimiter && !insideQuotes) {
+            row.push(entry.trim());
+            entry = '';
+          } else {
+            entry += char;
+          }
+        }
+        row.push(entry.trim());
+
+        // Validate column count (expecting at least 8: class_id, unit_id, text, A, B, C, D, correct_answer)
+        if (row.length < 8) {
+          errors.push(`Satır ${i + 1}: Eksik alan. Soru formatı en az 8 sütun içermelidir.`);
+          continue;
+        }
+
+        // Clean cells from surrounding quotes
+        const cleanedRow = row.map(cell => {
+          let val = cell;
+          if (val.startsWith('"') && val.endsWith('"')) {
+            val = val.substring(1, val.length - 1);
+          }
+          // Unescape inside double quotes
+          val = val.replace(/""/g, '"');
+          return val;
+        });
+
+        const [classId, unitId, qText, optA, optB, optC, optD, correctAns, difficulty] = cleanedRow;
+
+        if (!classId || !unitId || !qText || !optA || !optB || !optC || !optD || !correctAns) {
+          errors.push(`Satır ${i + 1}: Sınıf ID, Ünite ID, Soru Metni, Şıklar ve Doğru Cevap zorunludur.`);
+          continue;
+        }
+
+        // Validate if class_id is known
+        const isClassValid = classes.some(c => c.id === classId.trim());
+        if (!isClassValid) {
+          errors.push(`Satır ${i + 1}: Tanımlanmayan Sınıf ID '${classId}'. Örneğin 'class-6' olmalıdır.`);
+          continue;
+        }
+
+        // Validate if correct answer is one of the options
+        const options = [optA, optB, optC, optD];
+        const isCorrectInOptions = options.some(opt => opt.trim() === correctAns.trim());
+        if (!isCorrectInOptions) {
+          errors.push(`Satır ${i + 1}: Doğru cevap metni ('${correctAns}'), seçeneklerden biriyle (A, B, C, D) tam olarak eşleşmelidir.`);
+          continue;
+        }
+
+        questionsParsed.push({
+          class_id: classId.trim(),
+          unit_id: unitId.trim(),
+          text: qText.trim(),
+          options: options.map(o => o.trim()),
+          correct_answer: correctAns.trim(),
+          difficulty: ['Kolay', 'Orta', 'Zor'].includes(difficulty) ? difficulty : 'Orta'
+        });
+      }
+
+      setCsvQuestions(questionsParsed);
+      setCsvErrors(errors);
+    };
+
+    reader.readAsText(file, 'utf-8');
+  };
+
+  const handleUploadCsv = async () => {
+    if (csvQuestions.length === 0) return;
+    setUploadingCsv(true);
+    setUploadProgress(0);
+    let successCount = 0;
+    const chunkSize = 50;
+
+    try {
+      for (let i = 0; i < csvQuestions.length; i += chunkSize) {
+        const chunk = csvQuestions.slice(i, i + chunkSize);
+        
+        // Add random IDs to entries
+        const chunkWithIds = chunk.map(q => ({
+          id: `q-${q.class_id}-${Math.random().toString(36).substring(2, 9)}`,
+          ...q
+        }));
+
+        const { error: insertErr } = await supabase
+          .from('questions')
+          .insert(chunkWithIds);
+
+        if (insertErr) throw insertErr;
+
+        successCount += chunk.length;
+        setUploadProgress(Math.round((successCount / csvQuestions.length) * 100));
+      }
+
+      alert(`Başarıyla ${successCount} soru sisteme yüklendi!`);
+      setIsCsvModalOpen(false);
+      setCsvQuestions([]);
+      setCsvErrors([]);
+      if (csvInputRef.current) csvInputRef.current.value = '';
+      fetchQuestions();
+      fetchStats();
+    } catch (err) {
+      alert(`Soru aktarımı sırasında hata oluştu: ${err.message}`);
+    } finally {
+      setUploadingCsv(false);
     }
   };
 
@@ -277,14 +425,25 @@ const AdminDashboard = () => {
           </p>
         </div>
         
-        <button 
-          className="btn btn-primary" 
-          onClick={handleOpenAddModal}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
-        >
-          <PlusCircle size={20} />
-          Yeni Soru Ekle
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-outline" 
+            onClick={() => setIsCsvModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
+          >
+            <Upload size={18} />
+            CSV ile Toplu Yükle
+          </button>
+          
+          <button 
+            className="btn btn-primary" 
+            onClick={handleOpenAddModal}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
+          >
+            <PlusCircle size={20} />
+            Yeni Soru Ekle
+          </button>
+        </div>
       </div>
 
       {/* Info Stats Row */}
@@ -304,7 +463,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Filter and Table Container */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
         
         {/* Search & Filter Bar */}
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -411,8 +570,8 @@ const AdminDashboard = () => {
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>Seçilen filtrelere uygun soru bulunamadı. Yeni soru ekleyebilirsiniz.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="table-responsive" style={{ overflowX: 'auto', width: '100%' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--color-gray)', color: 'var(--color-black-light)', fontSize: '0.85rem', fontWeight: 600 }}>
                   <th style={{ padding: '1rem 0.5rem' }}>Sınıf / Ünite</th>
@@ -498,7 +657,7 @@ const AdminDashboard = () => {
 
         {/* Pagination Bar */}
         {!loading && totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', borderTop: '1px solid var(--color-gray)', paddingTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', borderTop: '1px solid var(--color-gray)', paddingTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-black-light)' }}>
               Toplam <strong>{totalCount}</strong> sorudan <strong>{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalCount)}</strong> arası gösteriliyor.
             </span>
@@ -528,6 +687,173 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* CSV Bulk Import Modal */}
+      {isCsvModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1100,
+          padding: '1.5rem'
+        }}>
+          <div className="card glass" style={{
+            width: '100%',
+            maxWidth: '800px',
+            backgroundColor: 'var(--color-white)',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '2rem'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-gray)', paddingBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.25rem', color: 'var(--color-black)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Upload size={20} color="var(--color-purple)" />
+                CSV ile Toplu Soru Yükleme
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsCsvModalOpen(false);
+                  setCsvQuestions([]);
+                  setCsvErrors([]);
+                  if (csvInputRef.current) csvInputRef.current.value = '';
+                }} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-black-light)' }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Guide Info */}
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-black-light)', backgroundColor: 'var(--color-white-off)', padding: '1rem', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid var(--color-purple)' }}>
+              <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>CSV Dosya Formatı Kuralları:</p>
+              <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <li>Dosya sütunları sırasıyla şu şekilde olmalıdır: <strong>class_id, unit_id, text, optionA, optionB, optionC, optionD, correct_answer, difficulty</strong></li>
+                <li><strong>class_id</strong> değerleri: <code>class-6</code>, <code>class-7</code> ... <code>class-12</code> olmalıdır.</li>
+                <li><strong>correct_answer</strong> değeri girilen seçeneklerden (A, B, C veya D) birinin metni ile tam olarak eşleşmelidir.</li>
+                <li><strong>difficulty</strong> değeri: <code>Kolay</code>, <code>Orta</code> veya <code>Zor</code> olabilir (boş bırakılırsa Orta atanır).</li>
+              </ul>
+            </div>
+
+            {/* File Input */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>CSV Dosyası Seçin (.csv)</label>
+              <input 
+                type="file" 
+                accept=".csv"
+                ref={csvInputRef}
+                onChange={handleCsvFileChange}
+                disabled={uploadingCsv}
+                style={{
+                  padding: '0.75rem',
+                  border: '2px dashed var(--color-gray)',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              />
+            </div>
+
+            {/* Errors display */}
+            {csvErrors.length > 0 && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px solid #fee2e2', borderRadius: 'var(--radius-sm)', padding: '1rem', maxHeight: '150px', overflowY: 'auto' }}>
+                <h4 style={{ color: '#ef4444', fontSize: '0.9rem', margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <AlertTriangle size={16} />
+                  Ayrıştırma Hataları ({csvErrors.length} hata var. Lütfen dosyayı düzeltin):
+                </h4>
+                <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.8rem', color: 'var(--color-black-light)' }}>
+                  {csvErrors.map((err, i) => <li key={i} style={{ color: '#dc2626' }}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+
+            {/* Preview of parsed data */}
+            {csvQuestions.length > 0 && (
+              <div style={{ flex: 1, overflowY: 'auto', border: '1px solid var(--color-gray)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ backgroundColor: 'var(--color-white-off)', padding: '0.5rem 1rem', fontSize: '0.85rem', fontWeight: 600, borderBottom: '1px solid var(--color-gray)' }}>
+                  Yüklenecek Sorular Önizlemesi ({csvQuestions.length} Soru Bulundu)
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: 'var(--color-white-off)', borderBottom: '1px solid var(--color-gray)' }}>
+                      <th style={{ padding: '0.5rem 1rem' }}>Sınıf</th>
+                      <th style={{ padding: '0.5rem 1rem', width: '50%' }}>Soru Metni</th>
+                      <th style={{ padding: '0.5rem 1rem' }}>Doğru Cevap</th>
+                      <th style={{ padding: '0.5rem 1rem' }}>Zorluk</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvQuestions.slice(0, 5).map((q, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--color-gray)' }}>
+                        <td style={{ padding: '0.5rem 1rem' }}>{getClassNameLocal(q.class_id)}</td>
+                        <td style={{ padding: '0.5rem 1rem' }}>{q.text.length > 80 ? `${q.text.substring(0, 80)}...` : q.text}</td>
+                        <td style={{ padding: '0.5rem 1rem', color: '#22c55e', fontWeight: 600 }}>{q.correct_answer}</td>
+                        <td style={{ padding: '0.5rem 1rem' }}>{q.difficulty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {csvQuestions.length > 5 && (
+                  <div style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', color: 'var(--color-black-light)', textAlign: 'center', backgroundColor: 'var(--color-white-off)' }}>
+                    ... ve {csvQuestions.length - 5} soru daha yüklenecek.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Uploading progress bar */}
+            {uploadingCsv && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600 }}>
+                  <span>Sorular Yükleniyor...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--color-gray)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${uploadProgress}%`, height: '100%', backgroundColor: 'var(--color-purple)', transition: 'width 0.2s' }}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: '1rem', borderTop: '1px solid var(--color-gray)', paddingTop: '1rem' }}>
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                disabled={uploadingCsv}
+                onClick={() => {
+                  setIsCsvModalOpen(false);
+                  setCsvQuestions([]);
+                  setCsvErrors([]);
+                  if (csvInputRef.current) csvInputRef.current.value = '';
+                }}
+                style={{ flex: 1 }}
+              >
+                Kapat
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={handleUploadCsv}
+                disabled={csvQuestions.length === 0 || csvErrors.length > 0 || uploadingCsv}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: (csvQuestions.length === 0 || csvErrors.length > 0 || uploadingCsv) ? 0.5 : 1 }}
+              >
+                {uploadingCsv ? <Loader className="spinner" size={18} /> : <Save size={18} />}
+                Aktarımı Başlat ({csvQuestions.length} Soru)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* CRUD Add/Edit Modal */}
       {isModalOpen && (
