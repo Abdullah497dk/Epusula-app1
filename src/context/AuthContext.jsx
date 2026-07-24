@@ -108,6 +108,8 @@ export const AuthProvider = ({ children }) => {
         bio: profile.bio,
         phone: profile.phone,
         profilePic: profile.profile_pic,
+        adminStatus: profile.admin_status,
+        isSuperAdmin: profile.is_super_admin,
         stats: {
           streak: streakVal,
           totalAnswered: profile.total_answered,
@@ -136,6 +138,8 @@ export const AuthProvider = ({ children }) => {
         bio: p.bio,
         phone: p.phone,
         profilePic: p.profile_pic,
+        adminStatus: p.admin_status,
+        isSuperAdmin: p.is_super_admin,
         stats: {
           streak: p.streak,
           totalAnswered: p.total_answered,
@@ -251,9 +255,9 @@ export const AuthProvider = ({ children }) => {
     });
 
     await refreshUserData(data.user.id);
-    // Fetch profile to know role
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-    return { success: true, role: profile?.role };
+    // Fetch profile to know role + admin onay durumu
+    const { data: profile } = await supabase.from('profiles').select('role, admin_status, is_super_admin').eq('id', data.user.id).single();
+    return { success: true, role: profile?.role, adminStatus: profile?.admin_status, isSuperAdmin: profile?.is_super_admin };
   };
 
   const loginWithGoogle = async () => {
@@ -295,6 +299,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message };
     }
 
+    let adminStatus;
     if (data.user) {
       // Create initial login activity
       await supabase.from('activities').insert({
@@ -303,9 +308,12 @@ export const AuthProvider = ({ children }) => {
         date: new Date().toISOString()
       });
       await refreshUserData(data.user.id);
+      // Admin kaydında onay durumunu (pending/approved) öğren
+      const { data: p } = await supabase.from('profiles').select('admin_status').eq('id', data.user.id).single();
+      adminStatus = p?.admin_status;
     }
 
-    return { success: true, role };
+    return { success: true, role, adminStatus };
   };
 
   const updateProfile = async (updatedData) => {
@@ -433,6 +441,14 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
+  // Admin onay kuyruğu (yalnız süper admin). status: 'approved' | 'rejected' | 'pending'
+  const setAdminStatus = async (userId, status) => {
+    const { error } = await supabase.from('profiles').update({ admin_status: status }).eq('id', userId);
+    if (error) return { success: false, error: error.message };
+    await refreshUserData(user.id);
+    return { success: true };
+  };
+
   const value = {
     user,
     login,
@@ -449,7 +465,8 @@ export const AuthProvider = ({ children }) => {
     addActivity,
     loginWithGoogle,
     updateClassName,
-    removeStudentFromClass
+    removeStudentFromClass,
+    setAdminStatus
   };
 
   return (

@@ -14,6 +14,30 @@ import StudentStats from './pages/StudentStats';
 import MyStats from './pages/MyStats';
 
 
+// Onaylanmamış admin için bekleme ekranı (iki adımlı admin girişi)
+const AdminPending = () => {
+  const { user, logout } = useAuth();
+  const rejected = user?.adminStatus === 'rejected';
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backgroundColor: 'var(--color-white-off)' }}>
+      <div className="card glass" style={{ width: '100%', maxWidth: '440px', padding: '2.5rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{rejected ? '⛔' : '⏳'}</div>
+        <h1 style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>
+          {rejected ? 'Admin Başvurunuz Reddedildi' : 'Admin Onayı Bekleniyor'}
+        </h1>
+        <p style={{ color: 'var(--color-black-light)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+          {rejected
+            ? 'Yönetici erişim talebiniz ana admin tarafından onaylanmadı. Bilgi için epusula.akademi@gmail.com ile iletişime geçebilirsiniz.'
+            : 'Yönetici hesabınız ana admin (epusula.akademi@gmail.com) onayından sonra aktifleşecek. Onaylandığında giriş yaparak yönetici paneline erişebilirsiniz.'}
+        </p>
+        <button className="btn btn-outline" style={{ padding: '0.75rem 1.5rem' }} onClick={logout}>
+          Çıkış Yap
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -27,6 +51,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     if (user.role === 'student') return <Navigate to="/student/dashboard" replace />;
     if (user.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
     if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Admin onay kapısı: onaylanmamış admin hiçbir yönetici işlevine erişemez
+  if (user.role === 'admin' && user.adminStatus !== 'approved') {
+    return <AdminPending />;
   }
 
   return <Layout>{children}</Layout>;

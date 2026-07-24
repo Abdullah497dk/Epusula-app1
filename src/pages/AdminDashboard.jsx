@@ -1,12 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import { classes, units } from '../data/mockData';
-import { 
-  PlusCircle, Search, Settings, BookOpen, Trash2, Edit2, 
-  ChevronLeft, ChevronRight, X, Loader, AlertCircle, Save, HelpCircle, Upload, AlertTriangle 
+import {
+  PlusCircle, Search, Settings, BookOpen, Trash2, Edit2,
+  ChevronLeft, ChevronRight, X, Loader, AlertCircle, Save, HelpCircle, Upload, AlertTriangle,
+  Users, GraduationCap, UserCog, Check, ShieldCheck
 } from 'lucide-react';
 
 const AdminDashboard = () => {
+  const { user, allUsers, setAdminStatus } = useAuth();
+
+  // Kayıtlı kullanıcı sayıları (Supabase profiles'tan; allUsers context'te yüklü)
+  const userCounts = {
+    total: allUsers.length,
+    students: allUsers.filter((u) => u.role === 'student').length,
+    teachers: allUsers.filter((u) => u.role === 'teacher').length,
+    admins: allUsers.filter((u) => u.role === 'admin').length
+  };
+  // İki adımlı admin girişi: onay bekleyen adminler (yalnız süper admin görür)
+  const pendingAdmins = allUsers.filter((u) => u.role === 'admin' && u.adminStatus === 'pending');
+
+  const handleAdminDecision = async (userId, status) => {
+    const res = await setAdminStatus(userId, status);
+    if (!res.success) alert('İşlem başarısız: ' + (res.error || ''));
+  };
+
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -461,6 +480,74 @@ const AdminDashboard = () => {
           </div>
         ))}
       </div>
+
+      {/* Kayıtlı Kullanıcı İstatistikleri */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '0.75rem', backgroundColor: 'rgba(112, 38, 185, 0.1)', borderRadius: '50%', color: 'var(--color-purple)' }}><Users size={22} /></div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-black-light)', fontWeight: 600 }}>Toplam Kayıtlı Kullanıcı</span>
+            <h4 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>{userCounts.total}</h4>
+          </div>
+        </div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%', color: 'var(--color-blue)' }}><GraduationCap size={22} /></div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-black-light)', fontWeight: 600 }}>Öğrenci</span>
+            <h4 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>{userCounts.students}</h4>
+          </div>
+        </div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '0.75rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '50%', color: '#22c55e' }}><UserCog size={22} /></div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-black-light)', fontWeight: 600 }}>Öğretmen</span>
+            <h4 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>{userCounts.teachers}</h4>
+          </div>
+        </div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '0.75rem', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderRadius: '50%', color: '#f59e0b' }}><ShieldCheck size={22} /></div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-black-light)', fontWeight: 600 }}>Yönetici</span>
+            <h4 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>{userCounts.admins}</h4>
+          </div>
+        </div>
+      </div>
+      <p style={{ fontSize: '0.8rem', color: 'var(--color-black-light)', margin: '-0.5rem 0 0 0.25rem' }}>
+        Not: Bu sayı uygulamaya kayıtlı kullanıcı sayısıdır. Play Store gerçek indirme sayısı
+        yayından sonra Google Play Console panelinden takip edilir.
+      </p>
+
+      {/* Bekleyen Admin İstekleri — yalnız ana (süper) admin */}
+      {user?.isSuperAdmin && (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ShieldCheck size={20} color="var(--color-purple)" />
+            Bekleyen Admin İstekleri ({pendingAdmins.length})
+          </h3>
+          {pendingAdmins.length === 0 ? (
+            <p style={{ color: 'var(--color-black-light)', margin: 0 }}>Şu an onay bekleyen yönetici isteği yok.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {pendingAdmins.map((a) => (
+                <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.75rem 1rem', backgroundColor: 'var(--color-white-off)', borderRadius: 'var(--radius-sm)' }}>
+                  <div>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{a.name}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-black-light)', margin: 0 }}>{a.email}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-primary" style={{ padding: '0.4rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }} onClick={() => handleAdminDecision(a.id, 'approved')}>
+                      <Check size={16} /> Onayla
+                    </button>
+                    <button className="btn btn-outline" style={{ padding: '0.4rem 0.9rem', color: '#ef4444', borderColor: '#fecaca', display: 'flex', alignItems: 'center', gap: '0.35rem' }} onClick={() => handleAdminDecision(a.id, 'rejected')}>
+                      <X size={16} /> Reddet
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter and Table Container */}
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
