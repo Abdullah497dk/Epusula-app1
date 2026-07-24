@@ -48,6 +48,20 @@ update public.profiles set is_super_admin=true, role='admin', admin_status='appr
 where email='epusula.akademi@gmail.com';
 ```
 
+## 5) Şifre sıfırlama ("Şifremi unuttum")
+Kod hazır (Login'de "Şifremi unuttum?" → e-posta → link → "Yeni şifre belirle").
+Çalışması için Supabase'de:
+1. **Authentication → URL Configuration:**
+   - **Site URL** = ana site adresin (örn. `https://epusula.com`).
+   - **Redirect URLs** allow-list'e ekle: ana site adresin ve (native APK için) `epusula://login`.
+2. `.env` içine **`VITE_APP_URL=https://ana-site-adresin/`** ekle (sıfırlama linkinin döneceği adres).
+3. **E-posta gönderimi:** Supabase'in yerleşik servisi test için çalışır ama **çok limitli + spam'e düşebilir**.
+   Gerçek kullanım için **Authentication → Emails → SMTP Settings**'ten ücretsiz bir SMTP bağla
+   (örn. Resend: 3000 mail/ay ücretsiz). Kod aynı kalır; sadece panelden ayar.
+
+> Mobil (APK) kullanıcı sıfırlama linkine tıklarsa link telefonun tarayıcısında ana siteyi açar,
+> şifreyi orada değiştirir, sonra uygulamaya yeni şifresiyle girer — ekstra kurulum gerekmez.
+
 ## Notlar
 - **classes** ve **units** DB'de değil; `src/data/mockData.js` içinde statik durur
   (nadiren değişir, küçük). `questions.class_id/unit_id` bunlara metinle eşleşir.

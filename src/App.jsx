@@ -7,6 +7,8 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import MyClasses from './pages/MyClasses';
@@ -100,14 +102,20 @@ const RootRoute = () => {
   return <Navigate to="/login" replace />;
 };
 
-function App() {
+function AppRoutes() {
+  const { passwordRecovery } = useAuth();
+
+  // Şifre sıfırlama linkiyle gelindiyse, her şeyin önüne "yeni şifre" ekranını koy
+  if (passwordRecovery) {
+    return <ResetPassword />;
+  }
+
   return (
-    <AuthProvider>
-      <HashRouter>
-        <Routes>
+    <Routes>
           <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           
           {/* Profile Route for all authenticated users */}
           <Route 
@@ -183,7 +191,15 @@ function App() {
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <HashRouter>
+        <AppRoutes />
       </HashRouter>
     </AuthProvider>
   );

@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [allUsers, setAllUsers] = useState([]);
   const [customClasses, setCustomClasses] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   // Helper to get calendar day difference
   const getDaysDiff = (date1, date2) => {
@@ -192,6 +193,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Auth State change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Şifre sıfırlama linkiyle gelindiğinde "yeni şifre belirle" ekranını aç
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true);
+      }
       if (session?.user) {
         await refreshUserData(session.user.id);
       } else {
@@ -223,6 +228,10 @@ export const AuthProvider = ({ children }) => {
               const refreshToken = params.get('refresh_token');
               if (accessToken && refreshToken) {
                 await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+                // Şifre sıfırlama deep-link'i ise yeni şifre ekranını aç
+                if (params.get('type') === 'recovery') {
+                  setPasswordRecovery(true);
+                }
               }
             }
           }
@@ -449,6 +458,28 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
+  // ---- Şifre sıfırlama ----
+
+  // Kullanıcıya sıfırlama linki e-postası gönderir.
+  // redirectTo: linke tıklanınca dönülecek herkese açık URL (ana site).
+  const sendPasswordReset = async (email) => {
+    const base = import.meta.env.VITE_APP_URL || (window.location.origin + window.location.pathname);
+    const redirectTo = isNative() ? 'epusula://login' : base;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  };
+
+  // Sıfırlama linkinden gelen oturumla yeni şifreyi kaydeder.
+  const updatePassword = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { success: false, error: error.message };
+    setPasswordRecovery(false);
+    return { success: true };
+  };
+
+  const clearPasswordRecovery = () => setPasswordRecovery(false);
+
   const value = {
     user,
     login,
@@ -466,7 +497,11 @@ export const AuthProvider = ({ children }) => {
     loginWithGoogle,
     updateClassName,
     removeStudentFromClass,
-    setAdminStatus
+    setAdminStatus,
+    passwordRecovery,
+    sendPasswordReset,
+    updatePassword,
+    clearPasswordRecovery
   };
 
   return (

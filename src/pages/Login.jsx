@@ -173,9 +173,15 @@ const Login = () => {
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
+            <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--color-purple)', textDecoration: 'none', fontWeight: 500 }}>
+              Şifremi unuttum?
+            </Link>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
             style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem' }}
             disabled={submitting}
           >
